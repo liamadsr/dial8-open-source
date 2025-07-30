@@ -561,7 +561,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 2.4;
 				"OTHER_SWIFT_FLAGS[arch=*]" = "-DDEVELOPMENT";
 				PRODUCT_BUNDLE_IDENTIFIER = com.liam.dial8;
@@ -638,7 +638,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 2.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dial8;
 				PRODUCT_NAME = Dial8;
