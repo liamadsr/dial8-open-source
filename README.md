@@ -1,4 +1,8 @@
-# Dial8 - Local Speech-to-Text for macOS
+<div align="center">
+  <img src="assets/icon.png" alt="Dial8 Icon" width="120" height="120">
+  
+  # Dial8 - Local Speech-to-Text for macOS
+</div>
 
 Dial8 is a powerful macOS application that runs Whisper AI locally to provide fast, private speech-to-text transcription. Replace typing with natural speech - just hold a hotkey, speak, and watch your words appear instantly.
 
@@ -153,4 +157,8 @@ We're building a community around Dial8 to take speech-to-text to the next level
 
 ---
 
-Built with ❤️ by the Dial8 community. Let's revolutionize how we interact with our computers through speech!
+<div align="center">
+  <img src="assets/icon.png" alt="Dial8 Icon" width="80" height="80">
+  
+  Built with ❤️ by the Dial8 community. Let's revolutionize how we interact with our computers through speech!
+</div>
