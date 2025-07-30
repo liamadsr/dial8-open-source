@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleExecutable</key>
+    <string>Mantle</string>
+    <key>CFBundleIdentifier</key>
+    <string>org.mantle.Mantle</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>Mantle</string>
+    <key>CFBundlePackageType</key>
+    <string>FMWK</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>CFBundleVersion</key>
+    <string>0.0.0</string>
+    <key>DTCompiler</key>
+    <string>com.apple.compilers.llvm.clang.1_0</string>
+    <key>DTSDKBuild</key>
+    <string>22E245</string>
+    <key>DTSDKName</key>
+    <string>macosx13.3</string>
+    <key>DTXcode</key>
+    <string>1431</string>
+    <key>DTXcodeBuild</key>
+    <string>14E300c</string>
+    <key>NSPrincipalClass</key>
+    <string/>
+    <key>ElectronAsarIntegrity</key>
+    <dict>
+      <key>Resources/app.asar</key>
+      <dict>
+        <key>algorithm</key>
+        <string>SHA256</string>
+        <key>hash</key>
+        <string>2d85a42e06dcbf1bf27945cb878ec5473c8306a0925015dd92eacbbc2c2428c6</string>
+      </dict>
+    </dict>
+  </dict>
+</plist>

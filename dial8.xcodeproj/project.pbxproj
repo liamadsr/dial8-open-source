@@ -1,0 +1,861 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		23B822972CDCE16B0003C523 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 23B822962CDCE16B0003C523 /* Sparkle */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		236946902CB1F359002E8CBD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 23C761542C92231C0094B283 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2369467E2CB1F357002E8CBD;
+			remoteInfo = "thinking aloud MacOS";
+		};
+		2369469A2CB1F359002E8CBD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 23C761542C92231C0094B283 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2369467E2CB1F357002E8CBD;
+			remoteInfo = "thinking aloud MacOS";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2368A9712D714DF900BDFFE7 /* Copy LLM Ex */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Ollama;
+			dstSubfolderSpec = 7;
+			files = (
+			);
+			name = "Copy LLM Ex";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2368A9862D714F9D00BDFFE7 /* Copy Files */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Frameworks;
+			dstSubfolderSpec = 7;
+			files = (
+			);
+			name = "Copy Files";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		2369467F2CB1F357002E8CBD /* Dial8.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Dial8.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2369468F2CB1F359002E8CBD /* dial8 MacOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "dial8 MacOSTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		236946992CB1F359002E8CBD /* dial8 MacOSUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "dial8 MacOSUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		23C7616C2C92231E0094B283 /* dial8Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = dial8Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		23C761762C92231E0094B283 /* dial8UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = dial8UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		2302563C2D6BFFEE00FB8EC0 /* Exceptions for "dial8 MacOS" folder in "dial8 MacOS" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Content/Assets.xcassets,
+			);
+			target = 2369467E2CB1F357002E8CBD /* dial8 MacOS */;
+		};
+		236D39C32CDDA2E400F8B429 /* Exceptions for "Resources" folder in "dial8 MacOS" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Whisper/whisper,
+			);
+			target = 2369467E2CB1F357002E8CBD /* dial8 MacOS */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		2368A98F2D714FB200BDFFE7 /* Exceptions for "Resources" folder in "Copy Files" phase from "dial8 MacOS" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			attributesByRelativePath = {
+				Frameworks/Mantle.framework = (CodeSignOnCopy, RemoveHeadersOnCopy, );
+				Frameworks/ReactiveObjC.framework = (CodeSignOnCopy, RemoveHeadersOnCopy, );
+				Frameworks/Squirrel.framework = (CodeSignOnCopy, RemoveHeadersOnCopy, );
+			};
+			buildPhase = 2368A9862D714F9D00BDFFE7 /* Copy Files */;
+			membershipExceptions = (
+				Frameworks/Mantle.framework,
+				Frameworks/ReactiveObjC.framework,
+				Frameworks/Squirrel.framework,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		236946802CB1F357002E8CBD /* dial8 MacOS */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				2302563C2D6BFFEE00FB8EC0 /* Exceptions for "dial8 MacOS" folder in "dial8 MacOS" target */,
+			);
+			path = "dial8 MacOS";
+			sourceTree = "<group>";
+		};
+		23C5D3CB2CC3BE6D00C043F0 /* Resources */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				236D39C32CDDA2E400F8B429 /* Exceptions for "Resources" folder in "dial8 MacOS" target */,
+				2368A98F2D714FB200BDFFE7 /* Exceptions for "Resources" folder in "Copy Files" phase from "dial8 MacOS" target */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		2369467C2CB1F357002E8CBD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				23B822972CDCE16B0003C523 /* Sparkle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2369468C2CB1F359002E8CBD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		236946962CB1F359002E8CBD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		23C761692C92231E0094B283 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		23C761732C92231E0094B283 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		2312C60D2C92673500B8A315 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		23C761532C92231C0094B283 = {
+			isa = PBXGroup;
+			children = (
+				23C5D3CB2CC3BE6D00C043F0 /* Resources */,
+				236946802CB1F357002E8CBD /* dial8 MacOS */,
+				2312C60D2C92673500B8A315 /* Frameworks */,
+				23C7615D2C92231C0094B283 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		23C7615D2C92231C0094B283 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				23C7616C2C92231E0094B283 /* dial8Tests.xctest */,
+				23C761762C92231E0094B283 /* dial8UITests.xctest */,
+				2369467F2CB1F357002E8CBD /* Dial8.app */,
+				2369468F2CB1F359002E8CBD /* dial8 MacOSTests.xctest */,
+				236946992CB1F359002E8CBD /* dial8 MacOSUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		2369467E2CB1F357002E8CBD /* dial8 MacOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 236946A72CB1F359002E8CBD /* Build configuration list for PBXNativeTarget "dial8 MacOS" */;
+			buildPhases = (
+				2369467B2CB1F357002E8CBD /* Sources */,
+				2369467C2CB1F357002E8CBD /* Frameworks */,
+				2369467D2CB1F357002E8CBD /* Resources */,
+				2368A9712D714DF900BDFFE7 /* Copy LLM Ex */,
+				2368A9862D714F9D00BDFFE7 /* Copy Files */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				236946802CB1F357002E8CBD /* dial8 MacOS */,
+			);
+			name = "dial8 MacOS";
+			packageProductDependencies = (
+				23B822962CDCE16B0003C523 /* Sparkle */,
+			);
+			productName = "thinking aloud MacOS";
+			productReference = 2369467F2CB1F357002E8CBD /* Dial8.app */;
+			productType = "com.apple.product-type.application";
+		};
+		2369468E2CB1F359002E8CBD /* dial8 MacOSTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 236946A82CB1F359002E8CBD /* Build configuration list for PBXNativeTarget "dial8 MacOSTests" */;
+			buildPhases = (
+				2369468B2CB1F359002E8CBD /* Sources */,
+				2369468C2CB1F359002E8CBD /* Frameworks */,
+				2369468D2CB1F359002E8CBD /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				236946912CB1F359002E8CBD /* PBXTargetDependency */,
+			);
+			name = "dial8 MacOSTests";
+			packageProductDependencies = (
+			);
+			productName = "thinking aloud MacOSTests";
+			productReference = 2369468F2CB1F359002E8CBD /* dial8 MacOSTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		236946982CB1F359002E8CBD /* dial8 MacOSUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 236946A92CB1F359002E8CBD /* Build configuration list for PBXNativeTarget "dial8 MacOSUITests" */;
+			buildPhases = (
+				236946952CB1F359002E8CBD /* Sources */,
+				236946962CB1F359002E8CBD /* Frameworks */,
+				236946972CB1F359002E8CBD /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2369469B2CB1F359002E8CBD /* PBXTargetDependency */,
+			);
+			name = "dial8 MacOSUITests";
+			packageProductDependencies = (
+			);
+			productName = "thinking aloud MacOSUITests";
+			productReference = 236946992CB1F359002E8CBD /* dial8 MacOSUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		23C7616B2C92231E0094B283 /* dial8Tests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 23C761832C92231E0094B283 /* Build configuration list for PBXNativeTarget "dial8Tests" */;
+			buildPhases = (
+				23C761682C92231E0094B283 /* Sources */,
+				23C761692C92231E0094B283 /* Frameworks */,
+				23C7616A2C92231E0094B283 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = dial8Tests;
+			packageProductDependencies = (
+			);
+			productName = "thinking aloudTests";
+			productReference = 23C7616C2C92231E0094B283 /* dial8Tests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		23C761752C92231E0094B283 /* dial8UITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 23C761862C92231E0094B283 /* Build configuration list for PBXNativeTarget "dial8UITests" */;
+			buildPhases = (
+				23C761722C92231E0094B283 /* Sources */,
+				23C761732C92231E0094B283 /* Frameworks */,
+				23C761742C92231E0094B283 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = dial8UITests;
+			packageProductDependencies = (
+			);
+			productName = "thinking aloudUITests";
+			productReference = 23C761762C92231E0094B283 /* dial8UITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		23C761542C92231C0094B283 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				ORGANIZATIONNAME = "";
+				TargetAttributes = {
+					2369467E2CB1F357002E8CBD = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					2369468E2CB1F359002E8CBD = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 2369467E2CB1F357002E8CBD;
+					};
+					236946982CB1F359002E8CBD = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 2369467E2CB1F357002E8CBD;
+					};
+					23C7616B2C92231E0094B283 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 23C7615B2C92231C0094B283;
+					};
+					23C761752C92231E0094B283 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 23C7615B2C92231C0094B283;
+					};
+				};
+			};
+			buildConfigurationList = 23C761572C92231C0094B283 /* Build configuration list for PBXProject "dial8" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 23C761532C92231C0094B283;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				23B822932CDCE0E20003C523 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 23C7615D2C92231C0094B283 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				23C7616B2C92231E0094B283 /* dial8Tests */,
+				23C761752C92231E0094B283 /* dial8UITests */,
+				2369467E2CB1F357002E8CBD /* dial8 MacOS */,
+				2369468E2CB1F359002E8CBD /* dial8 MacOSTests */,
+				236946982CB1F359002E8CBD /* dial8 MacOSUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		2369467D2CB1F357002E8CBD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2369468D2CB1F359002E8CBD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		236946972CB1F359002E8CBD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		23C7616A2C92231E0094B283 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		23C761742C92231E0094B283 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2369467B2CB1F357002E8CBD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2369468B2CB1F359002E8CBD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		236946952CB1F359002E8CBD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		23C761682C92231E0094B283 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		23C761722C92231E0094B283 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		236946912CB1F359002E8CBD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2369467E2CB1F357002E8CBD /* dial8 MacOS */;
+			targetProxy = 236946902CB1F359002E8CBD /* PBXContainerItemProxy */;
+		};
+		2369469B2CB1F359002E8CBD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2369467E2CB1F357002E8CBD /* dial8 MacOS */;
+			targetProxy = 2369469A2CB1F359002E8CBD /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		23523DD12CE9822C00C30DEF /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Development;
+		};
+		23523DD32CE9822C00C30DEF /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2725SDV2L5;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.liam.rylaTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/dial8.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/dial8";
+			};
+			name = Development;
+		};
+		23523DD42CE9822C00C30DEF /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2725SDV2L5;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.liam.rylaUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ryla;
+			};
+			name = Development;
+		};
+		23523DD52CE9822C00C30DEF /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = "dial8 MacOS/dial8_MacOS.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 16;
+				DEVELOPMENT_ASSET_PATHS = "\"dial8 MacOS/Preview Content\"";
+				DEVELOPMENT_TEAM = 2725SDV2L5;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "$(SRCROOT)/Info-macOS.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Dial8 ";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 2.4;
+				"OTHER_SWIFT_FLAGS[arch=*]" = "-DDEVELOPMENT";
+				PRODUCT_BUNDLE_IDENTIFIER = com.liam.dial8;
+				PRODUCT_NAME = Dial8;
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Development;
+		};
+		23523DD62CE9822C00C30DEF /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2725SDV2L5;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.liam.ryla-MacOSTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/dial8 MacOS.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/dial8 MacOS";
+			};
+			name = Development;
+		};
+		23523DD72CE9822C00C30DEF /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2725SDV2L5;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.liam.ryla-MacOSUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = "ryla MacOS";
+			};
+			name = Development;
+		};
+		236946A22CB1F359002E8CBD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = "dial8 MacOS/dial8_MacOS.entitlements";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Mac Developer";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 16;
+				DEVELOPMENT_ASSET_PATHS = "\"dial8 MacOS/Preview Content\"";
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = 2725SDV2L5;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "$(SRCROOT)/Info-macOS.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Dial8 ";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 2.4;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dial8;
+				PRODUCT_NAME = Dial8;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "Dial8 macOS Provisioning Profile";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		236946A42CB1F359002E8CBD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2725SDV2L5;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.liam.ryla-MacOSTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/dial8 MacOS.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/dial8 MacOS";
+			};
+			name = Release;
+		};
+		236946A62CB1F359002E8CBD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2725SDV2L5;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.liam.ryla-MacOSUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = "ryla MacOS";
+			};
+			name = Release;
+		};
+		23C7617F2C92231E0094B283 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		23C761852C92231E0094B283 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2725SDV2L5;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.liam.rylaTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/dial8.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/dial8";
+			};
+			name = Release;
+		};
+		23C761882C92231E0094B283 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2725SDV2L5;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.liam.rylaUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ryla;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		236946A72CB1F359002E8CBD /* Build configuration list for PBXNativeTarget "dial8 MacOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				23523DD52CE9822C00C30DEF /* Development */,
+				236946A22CB1F359002E8CBD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		236946A82CB1F359002E8CBD /* Build configuration list for PBXNativeTarget "dial8 MacOSTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				23523DD62CE9822C00C30DEF /* Development */,
+				236946A42CB1F359002E8CBD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		236946A92CB1F359002E8CBD /* Build configuration list for PBXNativeTarget "dial8 MacOSUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				23523DD72CE9822C00C30DEF /* Development */,
+				236946A62CB1F359002E8CBD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		23C761572C92231C0094B283 /* Build configuration list for PBXProject "dial8" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				23523DD12CE9822C00C30DEF /* Development */,
+				23C7617F2C92231E0094B283 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		23C761832C92231E0094B283 /* Build configuration list for PBXNativeTarget "dial8Tests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				23523DD32CE9822C00C30DEF /* Development */,
+				23C761852C92231E0094B283 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		23C761862C92231E0094B283 /* Build configuration list for PBXNativeTarget "dial8UITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				23523DD42CE9822C00C30DEF /* Development */,
+				23C761882C92231E0094B283 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		23B822932CDCE0E20003C523 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.6.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		23B822962CDCE16B0003C523 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 23B822932CDCE0E20003C523 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 23C761542C92231C0094B283 /* Project object */;
+}

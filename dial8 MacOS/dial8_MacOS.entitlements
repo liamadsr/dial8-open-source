@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- 
+	WARNING: App Sandbox (below) prevents accessing text fields in other applications 
+	via Accessibility API. To make cross-application text field access work, you MUST
+	set this to false. However, removing the sandbox may prevent Mac App Store distribution.
+	-->
+	<key>com.apple.security.app-sandbox</key>
+	<false/>
+	
+	<!-- Adding Accessibility permission - required for accessing text fields in other apps -->
+	<key>com.apple.security.accessibility</key>
+	<true/>
+	
+	<key>com.apple.security.automation.apple-events</key>
+	<true/>
+	<key>com.apple.security.cs.allow-jit</key>
+	<true/>
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+	<key>com.apple.security.device.audio-input</key>
+	<true/>
+	<key>com.apple.security.files.user-selected.read-only</key>
+	<true/>
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.security.network.server</key>
+	<true/>
+	<key>com.apple.security.personal-information.addressbook</key>
+	<true/>
+	<key>com.apple.security.personal-information.calendars</key>
+	<true/>
+	<key>com.apple.security.temporary-exception.apple-events</key>
+	<array>
+		<string>com.apple.systemevents</string>
+		<string>com.apple.finder</string>
+		<string>com.apple.systemuiserver</string>
+	</array>
+	<key>com.apple.security.input.monitoring</key>
+	<true/>
+	<key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
+	<array>
+		<string>/</string>
+	</array>
+	<key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+	<true/>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.dial8</string>
+	</array>
+	<key>com.apple.security.keychain</key>
+	<true/>
+	<key>com.apple.security.keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.dial8.oauth</string>
+	</array>
+	<key>com.apple.security.files.downloads.read-write</key>
+    <true/>
+	<key>com.apple.security.webkit</key>
+	<true/>
+	<key>com.apple.security.runningboard.assertions.webkit</key>
+	<true/>
+	<key>com.apple.security.temporary-exception.mach-register</key>
+    <true/>
+	<key>com.apple.security.temporary-exception.files.home-relative-path.read-write</key>
+	<array>
+		<string>/Library/Application Support/</string>
+		<string>/Library/Caches/</string>
+	</array>
+	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
+	<array>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER)-spks</string>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER)-spki</string>
+		<string>org.sparkle-project.Sparkle.Updater</string>
+		<string>org.sparkle-project.Sparkle.InstallerStatus</string>
+		<string>org.sparkle-project.Sparkle.InstallerConnection</string>
+	</array>
+	<key>com.apple.security.temporary-exception.sbpl</key>
+	<array>
+		<string>(allow mach-lookup (global-name "org.sparkle-project.Sparkle.*"))</string>
+		<string>(allow mach-lookup (global-name "com.apple.security.syspolicy"))</string>
+		<string>(allow process-info-dirtycontrol)</string>
+		<string>(allow process-info-pidinfo)</string>
+		<string>(allow process-info-setcontrol)</string>
+	</array>
+	<key>com.apple.security.temporary-exception.process-launch</key>
+	<array>
+		<string>org.sparkle-project.Sparkle.*</string>
+		<string>com.apple.installer</string>
+	</array>
+	<key>com.apple.security.temporary-exception.process-termination</key>
+	<array>
+		<string>org.sparkle-project.Sparkle.*</string>
+	</array>
+</dict>
+</plist>

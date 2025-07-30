@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.dial8.oauth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.dial8.oauth</string>
+				<string>dial8</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleDisplayName</key>
+	<string>Dial8</string>
+	<key>CFBundleName</key>
+	<string>Dial8</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
+
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>NSAccessibilityUsageDescription</key>
+	<string>We need accessibility access to insert transcribed text into other applications.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>We need to control other applications to insert transcribed text.</string>
+	<key>NSFileProviderDomainUsageDescription</key>
+	<string>We need access to files to save and load transcriptions.</string>
+	<key>NSInputMethodsUsageDescription</key>
+	<string>We need access to input methods to insert transcribed text into other applications.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires microphone access to record audio for real-time transcription.</string>
+	<key>NSNetworkUsageDescription</key>
+	<string>We need network access to communicate with our transcription service.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>We use speech recognition to detect when you're speaking, which helps us automatically start and stop recording at the right moments. This enables our streaming mode to capture your speech perfectly.</string>
+	<key>SUEnableInstallerLauncherService</key>
+	<true/>
+	<key>SUAllowsAutomaticUpdates</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>YOUR_UPDATE_SERVER_URL/appcast.xml</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUPublicEDKey</key>
+	<string>YOUR_SPARKLE_PUBLIC_KEY</string>
+	<key>NSSystemExtensionUsageDescription</key>
+	<string>This app needs to run the whisper executable for speech recognition.</string>
+	<key>CFBundleVersion</key>
+	<string>16</string>
+	<key>CFBundleShortVersionString</key>
+	<string>2.4</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
+	<key>SUShowReleaseNotes</key>
+	<true/>
+	<key>SUAutomaticallyUpdate</key>
+	<false/>
+	<key>SUEnableSystemProfiling</key>
+	<true/>
+	<key>SUEnableDownloaderService</key>
+	<false/>
+	<key>SUEnableJavaScript</key>
+	<true/>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleExecutable</key>
+	<string>Dial8</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+</dict>
+</plist>

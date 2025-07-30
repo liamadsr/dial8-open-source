@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash([ -f \"/Users/liamalizadeh/code/dial8/dial8 MacOS/Views/Notes/NotesView.swift\" ])",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(mv:*)",
+      "Bash(rm:*)",
+      "Bash(swift:*)",
+      "Bash(mkdir:*)",
+      "Bash(sw_vers)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(awk:*)",
+      "Bash(/Users/liamalizadeh/.nvm/versions/node/v18.17.0/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-darwin/rg -n \"isEditingTranscript|editedTranscript|Edit.*transcript|edit.*transcript\" \"/Users/liamalizadeh/code/dial8/dial8 MacOS/Views/MeetingNotes/MeetingNoteDetailView.swift\")",
+      "Bash(/Users/liamalizadeh/.nvm/versions/node/v18.17.0/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-darwin/rg -n -A 10 \"saveCurrentSessionTranscript.*editedText\" \"/Users/liamalizadeh/code/dial8/dial8 MacOS/Views/MeetingNotes/MeetingNoteDetailView.swift\")",
+      "Bash(/Users/liamalizadeh/.nvm/versions/node/v18.17.0/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-darwin/rg -n -A 5 \"parseEditedTranscriptToEntries\\|parseEditedTranscriptToSessionEntries\" \"/Users/liamalizadeh/code/dial8/dial8 MacOS/Views/MeetingNotes/MeetingNoteDetailView.swift\")",
+      "Bash(/Users/liamalizadeh/.nvm/versions/node/v18.17.0/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-darwin/rg -n \"parseEditedTranscriptToEntries|parseEditedTranscriptToSessionEntries\" \"/Users/liamalizadeh/code/dial8/dial8 MacOS/Views/MeetingNotes/MeetingNoteDetailView.swift\")",
+      "Bash(/Users/liamalizadeh/.nvm/versions/node/v18.17.0/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-darwin/rg -n \"^    }\" \"/Users/liamalizadeh/code/dial8/dial8 MacOS/Views/MeetingNotes/MeetingNoteDetailView.swift\")",
+      "Bash(xcodebuild:*)"
+    ],
+    "deny": []
+  }
+}
