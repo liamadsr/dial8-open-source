@@ -22,7 +22,7 @@ class AudioManager: ObservableObject {
     // Flag to prevent didSet during initialization
     private var isInitializing = true
     
-    @Published var isStreamingMode: Bool = true {
+    @Published var isStreamingMode: Bool = false {
         didSet {
             let mode = isStreamingMode ? "streaming" : "block"
             print("🎙️ Transcription mode changed to: \(mode)")
@@ -124,8 +124,8 @@ class AudioManager: ObservableObject {
             audioEngineService: audioEngineService
         )
         
-        // Load streaming/block mode setting from UserDefaults (defaults to streaming)
-        self.isStreamingMode = UserDefaults.standard.object(forKey: "streamingModeEnabled") as? Bool ?? true
+        // Load streaming/block mode setting from UserDefaults (defaults to block mode)
+        self.isStreamingMode = UserDefaults.standard.object(forKey: "streamingModeEnabled") as? Bool ?? false
         
         // Initialize TranscriptionResultHandler with the correct block mode setting
         TranscriptionResultHandler.shared.setBlockMode(!self.isStreamingMode)

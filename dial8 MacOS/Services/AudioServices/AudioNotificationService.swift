@@ -70,8 +70,8 @@ class AudioNotificationService: ObservableObject {
     }
     
     @objc private func handleStreamingModeToggled() {
-        // Ensure streaming mode is always enabled
-        UserDefaults.standard.set(true, forKey: "streamingModeEnabled")
+        // This method appears to be unused, but keeping it for compatibility
+        // Block mode is now the default
     }
     
     @objc private func handleLanguageChanged(_ notification: Notification) {

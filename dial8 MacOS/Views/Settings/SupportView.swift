@@ -6,15 +6,61 @@ struct SupportView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Header Section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Support & Feedback")
-                    .font(.title)
-                    .fontWeight(.bold)
+            // Header Section with Buy Me a Coffee button
+            HStack {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Support & Feedback")
+                        .font(.title)
+                        .fontWeight(.bold)
+                    
+                    Text("We'd love to hear from you!")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
                 
-                Text("We'd love to hear from you!")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                Spacer()
+                
+                // Buy Me a Coffee button
+                Button(action: {
+                    if let url = URL(string: "https://buymeacoffee.com/liamadsr") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }) {
+                    HStack(spacing: 6) {
+                        Text("☕️")
+                            .font(.system(size: 16))
+                        Text("Buy Me a Coffee")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(red: 0.4, green: 0.6, blue: 1.0),  // Soft blue
+                                Color(red: 0.8, green: 0.4, blue: 0.9),  // Purple-pink
+                                Color(red: 1.0, green: 0.4, blue: 0.6)   // Pink-red
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .foregroundColor(.white)
+                    .cornerRadius(20)
+                    .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.white.opacity(0.3), lineWidth: 0.5)
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
+                .onHover { hovering in
+                    if hovering {
+                        NSCursor.pointingHand.push()
+                    } else {
+                        NSCursor.pop()
+                    }
+                }
             }
             
             // Contact Cards

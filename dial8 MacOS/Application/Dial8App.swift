@@ -96,7 +96,7 @@ struct ThinkingAloudApp: App {
             UserDefaults.standard.removeObject(forKey: "accessibilityPermissionGranted")
             
             // Set default values for settings
-            UserDefaults.standard.set(true, forKey: "streamingModeEnabled")  // Set streaming mode as default
+            UserDefaults.standard.set(false, forKey: "streamingModeEnabled")  // Set block mode as default
             
             // Ensure dev setting onboarding is shown
             UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
@@ -167,9 +167,9 @@ struct ThinkingAloudApp: App {
     // MARK: - Default Settings
     
     private func ensureDefaultSettings() {
-        // Set default value for streaming mode if it doesn't exist
+        // Set default value for streaming mode if it doesn't exist (block mode by default)
         if !UserDefaults.standard.contains(key: "streamingModeEnabled") {
-            UserDefaults.standard.set(true, forKey: "streamingModeEnabled")
+            UserDefaults.standard.set(false, forKey: "streamingModeEnabled")
         }
     }
 
