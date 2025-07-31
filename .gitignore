@@ -143,3 +143,5 @@ private/
 # User-specific files
 *.xcuserstate
 xcuserdata/
+
+.cursor/
