@@ -133,26 +133,26 @@ class WhisperManager: NSObject, ObservableObject, URLSessionDownloadDelegate {
 
     // Add model display mapping as a static property
     private static let modelDisplayInfo: [String: ModelDisplayInfo] = [
-        "Base": ModelDisplayInfo(
-            id: "Base",
-            displayName: "Balanced Mode",
-            icon: "bolt.circle",
-            description: "Fast and accurate for English speech. Perfect for everyday dictation and note-taking.",
-            recommendation: "Best for English-only use"
-        ),
         "Small": ModelDisplayInfo(
             id: "Small",
-            displayName: "Focus Mode",
+            displayName: "Small",
             icon: "scope",
             description: "Higher accuracy with slightly longer processing time. Ideal when precision matters most.",
             recommendation: "Best accuracy for English"
         ),
-        "Medium": ModelDisplayInfo(
-            id: "Medium",
-            displayName: "Multilingual Mode",
-            icon: "globe",
-            description: "Optimized for multiple languages. Essential for non-English speech.",
-            recommendation: "Best for multiple languages"
+        "largev3": ModelDisplayInfo(
+            id: "largev3",
+            displayName: "Large V3",
+            icon: "star.circle",
+            description: "Highest accuracy model for professional transcription and complex audio.",
+            recommendation: "Best for professional use"
+        ),
+        "largev3turbo": ModelDisplayInfo(
+            id: "largev3turbo",
+            displayName: "Large V3 Turbo",
+            icon: "bolt.star.circle",
+            description: "Optimized large model with faster processing while maintaining high accuracy.",
+            recommendation: "Best balance of speed and accuracy"
         )
     ]
 
@@ -188,9 +188,11 @@ class WhisperManager: NSObject, ObservableObject, URLSessionDownloadDelegate {
 
     // Load information about available Whisper models
     private func loadAvailableModels() {
-        // Only include Small model
+        // Include Small, largev3, and largev3turbo models
         let models = [
-            ("Small", "ggml-small.bin")
+            ("Small", "ggml-small.bin"),
+            ("largev3", "ggml-large-v3.bin"),
+            ("largev3turbo", "ggml-large-v3-turbo.bin")
         ]
 
         var modelsInfo: [WhisperModelInfo] = []
@@ -201,7 +203,7 @@ class WhisperManager: NSObject, ObservableObject, URLSessionDownloadDelegate {
             let isAvailable = FileManager.default.fileExists(atPath: fileURL.path)
             let fileSize = isAvailable ? (try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.size] as? UInt64) ?? 0 : 0
             let sizeString = isAvailable ? ByteCountFormatter.string(fromByteCount: Int64(fileSize), countStyle: .file) : ""
-            let isSelected = true // Always selected since it's the only option
+            let isSelected = size == selectedModelSize
 
             if isSelected {
                 selectedModelAvailable = true
@@ -210,10 +212,10 @@ class WhisperManager: NSObject, ObservableObject, URLSessionDownloadDelegate {
             // Get display info from static mapping
             let displayInfo = Self.modelDisplayInfo[size] ?? ModelDisplayInfo(
                 id: size,
-                displayName: "Multilingual Mode",
-                icon: "globe",
-                description: "Optimized for multiple languages. Essential for non-English speech.",
-                recommendation: "Best for multiple languages"
+                displayName: "Unknown Model",
+                icon: "questionmark.circle",
+                description: "Unknown model type.",
+                recommendation: nil
             )
 
             let modelInfo = WhisperModelInfo(
@@ -239,11 +241,11 @@ class WhisperManager: NSObject, ObservableObject, URLSessionDownloadDelegate {
 
     // Start the setup process for a given model size
     func startSetup(modelSize: String? = nil) {
-        // Always use Small model
-        selectedModelSize = "Small"
+        // Use provided model size or default to Small
+        selectedModelSize = modelSize ?? "Small"
         UserDefaults.standard.setValue(selectedModelSize, forKey: "SelectedWhisperModel")
         
-        // Just update the UI state
+        // Update the UI state
         isReady = availableModels.first(where: { $0.id == selectedModelSize })?.isAvailable ?? false
         
         // Reload models to update UI
@@ -252,9 +254,18 @@ class WhisperManager: NSObject, ObservableObject, URLSessionDownloadDelegate {
 
     // Download the specified Whisper model
     func downloadModel(modelSize: String) {
-        // Always download the Small model regardless of the parameter
-        let actualModelSize = "Small"
-        let fileName = "ggml-small.bin"
+        // Map model size to file name
+        let fileName: String
+        switch modelSize {
+        case "Small":
+            fileName = "ggml-small.bin"
+        case "largev3":
+            fileName = "ggml-large-v3.bin"
+        case "largev3turbo":
+            fileName = "ggml-large-v3-turbo.bin"
+        default:
+            fileName = "ggml-small.bin" // Default fallback
+        }
         
         let urlString = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/\(fileName)"
         guard let url = URL(string: urlString) else { return }
@@ -271,8 +282,8 @@ class WhisperManager: NSObject, ObservableObject, URLSessionDownloadDelegate {
 
     // Select a different Whisper model
     func selectModel(modelSize: String) {
-        // Always use Small regardless of input
-        selectedModelSize = "Small"
+        // Use the provided model size
+        selectedModelSize = modelSize
         UserDefaults.standard.setValue(selectedModelSize, forKey: "SelectedWhisperModel")
         loadAvailableModels()
         preloadSelectedModel() // Preload the newly selected model
