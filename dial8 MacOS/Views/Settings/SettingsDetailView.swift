@@ -10,6 +10,7 @@ struct SettingsItem: Identifiable, Equatable, Hashable {
         case settings
         case voiceScribe
         case hotKeys
+        case textReplacements
         case support
     }
     
@@ -29,9 +30,10 @@ struct SettingsItem: Identifiable, Equatable, Hashable {
     static let settings = SettingsItem(title: "App Settings", type: .settings, data: "settings")
     static let voiceScribe = SettingsItem(title: "Model Settings", type: .voiceScribe, data: "voice")
     static let hotKeys = SettingsItem(title: "Hotkeys", type: .hotKeys, data: "hotkeys")
+    static let textReplacements = SettingsItem(title: "Text Replacements", type: .textReplacements, data: "textReplacements")
     static let support = SettingsItem(title: "Support", type: .support, data: "support")
     
-    static let defaultItems = [voiceScribe, hotKeys, settings, support]
+    static let defaultItems = [voiceScribe, hotKeys, textReplacements, settings, support]
 }
 
 struct SettingsDetailView: View {
@@ -54,6 +56,8 @@ struct SettingsDetailView: View {
                         speechToTextContent
                     case .hotKeys:
                         hotKeysContent
+                    case .textReplacements:
+                        textReplacementsContent
                     case .support:
                         SupportView()
                     }
@@ -89,6 +93,21 @@ struct SettingsDetailView: View {
         .padding()
     }
     
+    
+    private var textReplacementsContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Text Replacements")
+                .font(.title)
+                .fontWeight(.bold)
+            
+            Text("Automatically replace shortcuts and correct transcription variations")
+                .font(.headline)
+                .foregroundColor(.secondary)
+            
+            TextReplacementsView()
+        }
+        .padding()
+    }
     
     private var hotKeysContent: some View {
         VStack(alignment: .leading, spacing: 16) {

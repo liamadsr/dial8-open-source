@@ -61,18 +61,24 @@ class TranscriptionResultHandler {
                 print("✅ TranscriptionResultHandler: Text cleaned successfully")
                 
                 await MainActor.run {
-                    self.handleTranscriptionInsertion(cleanedText, isTemporary: isTemporary)
+                    // Apply text replacements after AI cleaning but before insertion
+                    let processedText = TextReplacementService.shared.applyReplacements(to: cleanedText)
+                    self.handleTranscriptionInsertion(processedText, isTemporary: isTemporary)
                 }
             } catch {
                 print("⚠️ TranscriptionResultHandler: Cleaning failed, using original text")
                 await MainActor.run {
-                    self.handleTranscriptionInsertion(text, isTemporary: isTemporary)
+                    // Apply text replacements even when cleaning fails
+                    let processedText = TextReplacementService.shared.applyReplacements(to: text)
+                    self.handleTranscriptionInsertion(processedText, isTemporary: isTemporary)
                 }
             }
         } else {
             // If cleaning is disabled or unavailable, use original text
             await MainActor.run {
-                self.handleTranscriptionInsertion(text, isTemporary: isTemporary)
+                // Apply text replacements when cleaning is disabled
+                let processedText = TextReplacementService.shared.applyReplacements(to: text)
+                self.handleTranscriptionInsertion(processedText, isTemporary: isTemporary)
             }
         }
     }
@@ -94,18 +100,24 @@ class TranscriptionResultHandler {
                 print("✅ TranscriptionResultHandler: Text cleaned successfully")
                 
                 await MainActor.run {
-                    self.insertAccumulatedText(cleanedText)
+                    // Apply text replacements after AI cleaning but before insertion
+                    let processedText = TextReplacementService.shared.applyReplacements(to: cleanedText)
+                    self.insertAccumulatedText(processedText)
                 }
             } catch {
                 print("⚠️ TranscriptionResultHandler: Cleaning failed, using original text")
                 await MainActor.run {
-                    self.insertAccumulatedText(textToClean)
+                    // Apply text replacements even when cleaning fails
+                    let processedText = TextReplacementService.shared.applyReplacements(to: textToClean)
+                    self.insertAccumulatedText(processedText)
                 }
             }
         } else {
             // If cleaning is disabled or unavailable, use original text
             await MainActor.run {
-                self.insertAccumulatedText(textToClean)
+                // Apply text replacements when cleaning is disabled
+                let processedText = TextReplacementService.shared.applyReplacements(to: textToClean)
+                self.insertAccumulatedText(processedText)
             }
         }
         
@@ -144,7 +156,9 @@ class TranscriptionResultHandler {
                         // For temporary text, insert without cleaning to maintain responsiveness
                         DispatchQueue.main.async {
                             print("📲 TranscriptionResultHandler: Inserting temporary text: \"\(transcription)\"")
-                            self.handleTranscriptionInsertion(transcription, isTemporary: true)
+                            // Apply text replacements to temporary text for immediate feedback
+                            let processedText = TextReplacementService.shared.applyReplacements(to: transcription)
+                            self.handleTranscriptionInsertion(processedText, isTemporary: true)
                         }
                     }
                 }

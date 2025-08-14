@@ -97,6 +97,8 @@ struct SettingsRowView: View {
             return "waveform.circle"
         case .hotKeys:
             return "keyboard"
+        case .textReplacements:
+            return "textformat.alt"
         case .support:
             return "megaphone"
         default:
