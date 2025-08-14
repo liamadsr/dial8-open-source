@@ -16,6 +16,7 @@ struct UnifiedSettingsView: View {
         case recentActivity = "Recent Activity"
         case modelSettings = "Model Settings"
         case hotkeys = "Hotkeys"
+        case textReplacements = "Text Replacements"
         case appSettings = "App Settings"
         case support = "Support & Feedback"
         #if DEVELOPMENT
@@ -27,6 +28,7 @@ struct UnifiedSettingsView: View {
             case .recentActivity: return "clock.arrow.circlepath"
             case .modelSettings: return "waveform.circle"
             case .hotkeys: return "keyboard"
+            case .textReplacements: return "textformat.alt"
             case .appSettings: return "gearshape"
             case .support: return "megaphone"
             #if DEVELOPMENT
@@ -40,6 +42,7 @@ struct UnifiedSettingsView: View {
             case .recentActivity: return .indigo
             case .modelSettings: return .blue
             case .hotkeys: return .purple
+            case .textReplacements: return .cyan
             case .appSettings: return .green
             case .support: return .orange
             #if DEVELOPMENT
@@ -116,6 +119,8 @@ struct UnifiedSettingsView: View {
                             modelSettingsSection
                         case .hotkeys:
                             hotkeysSection
+                        case .textReplacements:
+                            textReplacementsSection
                         case .appSettings:
                             appSettingsSection
                         case .support:
@@ -210,6 +215,22 @@ struct UnifiedSettingsView: View {
                 .foregroundColor(.secondary)
             
             HotKeysView()
+        }
+    }
+    
+    // MARK: - Text Replacements Section
+    private var textReplacementsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Section Header
+            Text("Text Replacements")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            
+            Text("Automatically replace shortcuts and correct transcription variations")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            
+            TextReplacementsView()
         }
     }
     
