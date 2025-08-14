@@ -294,15 +294,8 @@ struct ReplacementEditSheet: View {
                                         get: { triggerTexts[index] },
                                         set: { triggerTexts[index] = $0 }
                                     ))
+                                    .textFieldStyle(.roundedBorder)
                                     .font(.system(size: 13))
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 10)
-                                    .background(fieldBackgroundColor)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 6)
-                                            .stroke(fieldBorderColor, lineWidth: 1)
-                                    )
-                                    .cornerRadius(6)
                                     .focused($focusedField, equals: .triggerText(index))
                                     
                                     if triggerTexts.count > 1 {
@@ -350,15 +343,8 @@ struct ReplacementEditSheet: View {
                         }
                         
                         TextField("e.g., product manager, Shaun, by the way", text: $replacementText)
+                            .textFieldStyle(.roundedBorder)
                             .font(.system(size: 13))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 10)
-                            .background(fieldBackgroundColor)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .stroke(fieldBorderColor, lineWidth: 1)
-                            )
-                            .cornerRadius(6)
                             .focused($focusedField, equals: .replacementText)
                     }
                     .padding(20)
