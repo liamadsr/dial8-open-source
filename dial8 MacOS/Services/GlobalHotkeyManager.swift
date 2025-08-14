@@ -399,8 +399,12 @@ class GlobalHotkeyManager: ObservableObject {
                 print("🔒 Push-to-talk: Recording locked - press Option to stop")
                 // Post notification to update UI if needed
                 NotificationCenter.default.post(name: Notification.Name("RecordingLockedStateChanged"), object: nil, userInfo: ["isLocked": true])
+                return nil // Consume the space bar event only when locking
+            } else if isRecordingLocked {
+                // Recording is already locked - let space bar events pass through to other apps
+                return Unmanaged.passRetained(event)
             }
-            return nil // Consume the space bar event (only when Command is not pressed)
+            return nil // Consume the space bar event for keyUp when not locked
         }
         
         // Regular hotkey handling for key press events
