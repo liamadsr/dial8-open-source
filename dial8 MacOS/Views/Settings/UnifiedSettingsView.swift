@@ -226,7 +226,7 @@ struct UnifiedSettingsView: View {
                 .font(.largeTitle)
                 .fontWeight(.bold)
             
-            Text("Automatically replace shortcuts and correct transcription variations")
+            Text("Replace specific text with your preferred alternatives, including name variations")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             

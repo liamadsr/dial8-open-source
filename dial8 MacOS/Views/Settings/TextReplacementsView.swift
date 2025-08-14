@@ -3,9 +3,8 @@ import Foundation
 
 struct TextReplacementsView: View {
     @StateObject private var replacementService = TextReplacementService.shared
-    @State private var showingAddAlert = false
-    @State private var newShortcut = ""
-    @State private var newReplacement = ""
+    @State private var showingAddSheet = false
+    @State private var editingReplacement: TextReplacement? = nil
     @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
@@ -26,7 +25,7 @@ struct TextReplacementsView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Text Replacements")
                             .font(.system(size: 14, weight: .medium))
-                        Text("Replace shortcuts like PM → product manager")
+                        Text("Replace text like PM → product manager or Sean, Shawn → Shaun")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -46,8 +45,8 @@ struct TextReplacementsView: View {
                 
                 // Add button
                 HStack {
-                    Button("Add Replacement") {
-                        showingAddAlert = true
+                    Button("Add New Replacement") {
+                        showingAddSheet = true
                     }
                     .buttonStyle(BorderedProminentButtonStyle())
                     .controlSize(.small)
@@ -69,9 +68,11 @@ struct TextReplacementsView: View {
                 } else {
                     VStack(spacing: 8) {
                         ForEach(replacementService.replacements) { replacement in
-                            ReplacementRow(replacement: replacement) {
-                                replacementService.removeReplacement(replacement)
-                            }
+                            ReplacementRow(
+                                replacement: replacement,
+                                onEdit: { editingReplacement = replacement },
+                                onDelete: { replacementService.removeReplacement(replacement) }
+                            )
                         }
                     }
                 }
@@ -80,61 +81,242 @@ struct TextReplacementsView: View {
         .padding(16)
         .background(colorScheme == .dark ? Color.white.opacity(0.05) : Color(NSColor.controlBackgroundColor))
         .cornerRadius(12)
-        .alert("Add Text Replacement", isPresented: $showingAddAlert) {
-            TextField("Shortcut (e.g., PM)", text: $newShortcut)
-            TextField("Replacement (e.g., product manager)", text: $newReplacement)
-            Button("Add") {
-                if !newShortcut.isEmpty && !newReplacement.isEmpty {
-                    let replacement = TextReplacement(shortcut: newShortcut, replacement: newReplacement)
-                    replacementService.addReplacement(replacement)
-                    newShortcut = ""
-                    newReplacement = ""
-                }
+        .sheet(isPresented: $showingAddSheet) {
+            ReplacementEditSheet(replacement: nil) { newReplacement in
+                replacementService.addReplacement(newReplacement)
             }
-            Button("Cancel", role: .cancel) {
-                newShortcut = ""
-                newReplacement = ""
+        }
+        .sheet(item: $editingReplacement) { replacement in
+            ReplacementEditSheet(replacement: replacement) { updatedReplacement in
+                replacementService.updateReplacement(updatedReplacement)
             }
-        } message: {
-            Text("Create a shortcut that will be automatically replaced when you speak.")
         }
     }
 }
 
 struct ReplacementRow: View {
     let replacement: TextReplacement
+    let onEdit: () -> Void
     let onDelete: () -> Void
     @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
-        HStack {
-            Text(replacement.shortcut)
-                .font(.system(.callout, design: .monospaced))
-                .foregroundColor(.primary)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.1))
-                .cornerRadius(4)
+        HStack(alignment: .top, spacing: 12) {
+            // Trigger texts
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(Array(replacement.triggerTexts.enumerated()), id: \.offset) { index, triggerText in
+                    Text(triggerText)
+                        .font(.system(.callout, design: .monospaced))
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.1))
+                        .cornerRadius(4)
+                }
+            }
             
             Image(systemName: "arrow.right")
                 .foregroundColor(.secondary)
                 .font(.caption)
+                .padding(.top, 2)
             
+            // Replacement text
             Text(replacement.replacement)
                 .font(.callout)
                 .foregroundColor(.primary)
+                .padding(.top, 2)
             
             Spacer()
             
-            Button(action: onDelete) {
-                Image(systemName: "trash")
-                    .font(.caption)
-                    .foregroundColor(.red)
+            // Action buttons
+            HStack(spacing: 8) {
+                Button(action: onEdit) {
+                    Image(systemName: "pencil")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
+                        .font(.caption)
+                        .foregroundColor(.red)
+                }
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
+            .padding(.top, 2)
         }
-        .padding(8)
+        .padding(12)
         .background(colorScheme == .dark ? Color.white.opacity(0.03) : Color.black.opacity(0.03))
-        .cornerRadius(6)
+        .cornerRadius(8)
+    }
+}
+
+struct ReplacementEditSheet: View {
+    let replacement: TextReplacement? // nil for new replacement
+    let onSave: (TextReplacement) -> Void
+    
+    @State private var triggerTexts: [String] = [""]
+    @State private var replacementText: String = ""
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Text(replacement == nil ? "Add New Replacement" : "Edit Replacement")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                
+                Spacer()
+                
+                Button("Cancel") {
+                    dismiss()
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.secondary)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(colorScheme == .dark ? Color.black.opacity(0.1) : Color.gray.opacity(0.1))
+            
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    // Text to Replace Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Text to Replace")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        Text("Add multiple variations that should be replaced with the same text")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        VStack(spacing: 8) {
+                            ForEach(Array(triggerTexts.enumerated()), id: \.offset) { index, triggerText in
+                                HStack {
+                                    TextField("e.g., PM, Sean, btw", text: Binding(
+                                        get: { triggerTexts[index] },
+                                        set: { triggerTexts[index] = $0 }
+                                    ))
+                                    .textFieldStyle(.roundedBorder)
+                                    
+                                    if triggerTexts.count > 1 {
+                                        Button(action: { removeTriggerText(at: index) }) {
+                                            Image(systemName: "minus.circle.fill")
+                                                .foregroundColor(.red)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                    }
+                                }
+                            }
+                        }
+                        
+                        Button(action: addTriggerText) {
+                            HStack {
+                                Image(systemName: "plus.circle.fill")
+                                    .foregroundColor(.blue)
+                                Text("Add another trigger text")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    .padding()
+                    .background(colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.05))
+                    .cornerRadius(8)
+                    
+                    // Replace With Section
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Replace With")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        TextField("e.g., product manager, Shaun, by the way", text: $replacementText)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    .padding()
+                    .background(colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.05))
+                    .cornerRadius(8)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+            }
+            
+            // Footer
+            HStack {
+                Spacer()
+                
+                Button("Cancel") {
+                    dismiss()
+                }
+                .buttonStyle(.bordered)
+                
+                Button("Save") {
+                    saveReplacement()
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!canSave)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(colorScheme == .dark ? Color.black.opacity(0.1) : Color.gray.opacity(0.1))
+        }
+        .frame(width: 500, height: 500)
+        .background(colorScheme == .dark ? Color.black : Color.white)
+        .cornerRadius(12)
+        .onAppear {
+            if let replacement = replacement {
+                // Editing existing replacement
+                triggerTexts = replacement.triggerTexts.isEmpty ? [""] : replacement.triggerTexts
+                replacementText = replacement.replacement
+            }
+        }
+    }
+    
+    private var canSave: Bool {
+        !replacementText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        triggerTexts.contains { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+    
+    private func addTriggerText() {
+        triggerTexts.append("")
+    }
+    
+    private func removeTriggerText(at index: Int) {
+        if triggerTexts.count > 1 {
+            triggerTexts.remove(at: index)
+        }
+    }
+    
+    private func saveReplacement() {
+        let cleanedTriggerTexts = triggerTexts
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        
+        let cleanedReplacementText = replacementText.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !cleanedTriggerTexts.isEmpty && !cleanedReplacementText.isEmpty else { return }
+        
+        let newReplacement: TextReplacement
+        if let existingReplacement = replacement {
+            // Create updated replacement with same ID and enabled state
+            newReplacement = TextReplacement(
+                id: existingReplacement.id,
+                triggerTexts: cleanedTriggerTexts,
+                replacement: cleanedReplacementText,
+                enabled: existingReplacement.enabled
+            )
+        } else {
+            // Create new replacement
+            newReplacement = TextReplacement(
+                triggerTexts: cleanedTriggerTexts,
+                replacement: cleanedReplacementText
+            )
+        }
+        
+        onSave(newReplacement)
+        dismiss()
     }
 }
