@@ -158,8 +158,14 @@ struct ReplacementEditSheet: View {
     
     @State private var triggerTexts: [String] = [""]
     @State private var replacementText: String = ""
+    @FocusState private var focusedField: FocusedField?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    
+    enum FocusedField: Hashable {
+        case triggerText(Int)
+        case replacementText
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -201,6 +207,7 @@ struct ReplacementEditSheet: View {
                                         set: { triggerTexts[index] = $0 }
                                     ))
                                     .textFieldStyle(.roundedBorder)
+                                    .focused($focusedField, equals: .triggerText(index))
                                     
                                     if triggerTexts.count > 1 {
                                         Button(action: { removeTriggerText(at: index) }) {
@@ -235,6 +242,7 @@ struct ReplacementEditSheet: View {
                         
                         TextField("e.g., product manager, Shaun, by the way", text: $replacementText)
                             .textFieldStyle(.roundedBorder)
+                            .focused($focusedField, equals: .replacementText)
                     }
                     .padding()
                     .background(colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.05))
@@ -272,6 +280,11 @@ struct ReplacementEditSheet: View {
                 triggerTexts = replacement.triggerTexts.isEmpty ? [""] : replacement.triggerTexts
                 replacementText = replacement.replacement
             }
+            
+            // Auto-focus the first trigger text field when the sheet opens
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                focusedField = .triggerText(0)
+            }
         }
     }
     
@@ -282,6 +295,10 @@ struct ReplacementEditSheet: View {
     
     private func addTriggerText() {
         triggerTexts.append("")
+        // Focus the newly added text field
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            focusedField = .triggerText(triggerTexts.count - 1)
+        }
     }
     
     private func removeTriggerText(at index: Int) {
