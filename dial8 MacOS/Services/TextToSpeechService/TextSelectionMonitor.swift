@@ -170,6 +170,11 @@ class TextSelectionMonitor: ObservableObject {
             isSwitchingText = true
         }
         
+        // Play processing sound when selecting text (only if showing new HUD)
+        if !isHUDVisible {
+            HUDSoundEffects.shared.playProcessingSound()
+        }
+        
         // Stop current playback if playing
         if TextToSpeechService.shared.state == .playing {
             print("📋 TextSelectionMonitor: Stopping current TTS playback")

@@ -92,6 +92,9 @@ class TextToSpeechService: NSObject, ObservableObject {
         
         currentUtterance = utterance
         
+        // Play sound effect when starting TTS (using ready sound)
+        HUDSoundEffects.shared.playReadySound()
+        
         // Start speaking
         synthesizer.speak(utterance)
         state = .playing

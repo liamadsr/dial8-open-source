@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TTSHUDView: View {
     @ObservedObject var ttsService = TextToSpeechService.shared
+    @StateObject private var animationState = HUDAnimationState()
     @State private var showSpeedMenu = false
     @State private var isHovering = false
     @State private var showingSpeedPopover = false
@@ -116,6 +117,25 @@ struct TTSHUDView: View {
             .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
             .onHover { hovering in
                 isHovering = hovering
+            }
+            // Apply the same folding animations as STT HUD
+            .scaleEffect(x: 1, y: animationState.scaleY, anchor: .center)
+            .rotation3DEffect(
+                .degrees(animationState.rotationAngle),
+                axis: (x: 1.0, y: 0.0, z: 0.0),
+                anchor: .center,
+                anchorZ: 0,
+                perspective: animationState.perspectiveAmount
+            )
+            .opacity(animationState.opacity)
+            .drawingGroup() // Optimize rendering performance
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("TTSHUDShouldAnimateIn"))) { _ in
+                animationState.animateIn()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("TTSHUDShouldAnimateOut"))) { _ in
+                animationState.animateOut {
+                    // Animation completed
+                }
             }
     }
     

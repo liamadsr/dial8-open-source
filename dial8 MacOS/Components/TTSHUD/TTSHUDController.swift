@@ -133,16 +133,21 @@ class TTSHUDController: NSWindowController {
         // Reset the playing flag so space key works for new selection
         hasStartedPlaying = false
         
+        // Start with window invisible to ensure animation controls visibility
+        window.alphaValue = 0
         window.orderFrontRegardless()
         window.makeKey()  // Make window key to receive key events
         
-        NSAnimationContext.runAnimationGroup({ context in
-            context.duration = animationDuration
-            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            window.animator().alphaValue = 1
-        }, completionHandler: {
-            print("🔊 TTSHUDController: Window shown and ready for input")
-        })
+        // Small delay to ensure window is ready before triggering animation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            // Set window to full opacity - the SwiftUI view will control its own opacity
+            window.alphaValue = 1
+            
+            // Trigger the folding open animation
+            NotificationCenter.default.post(name: Notification.Name("TTSHUDShouldAnimateIn"), object: nil)
+            
+            print("🔊 TTSHUDController: Window shown with animation and ready for input")
+        }
     }
     
     func resetForNewText() {
@@ -187,11 +192,11 @@ class TTSHUDController: NSWindowController {
             window.resignKey()
         }
         
-        NSAnimationContext.runAnimationGroup({ context in
-            context.duration = animationDuration
-            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            window.animator().alphaValue = 0
-        }, completionHandler: { [weak self] in
+        // Trigger the folding close animation
+        NotificationCenter.default.post(name: Notification.Name("TTSHUDShouldAnimateOut"), object: nil)
+        
+        // Wait for animation to complete before closing (match the animation duration)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
             window.orderOut(nil)
             window.close()
             self?.isAnimating = false
@@ -199,7 +204,7 @@ class TTSHUDController: NSWindowController {
             
             // Post notification that TTS HUD was dismissed
             NotificationCenter.default.post(name: Notification.Name("TTSHUDDismissed"), object: nil)
-        })
+        }
     }
     
     private func cleanupKeyMonitors() {
