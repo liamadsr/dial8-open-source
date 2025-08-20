@@ -332,6 +332,9 @@ class AudioManager: ObservableObject {
         // Ensure we're not in a stopping state (safety check)
         isStoppingRecording = false
         
+        // Post notification that recording is starting
+        NotificationCenter.default.post(name: Notification.Name("RecordingStarted"), object: nil)
+        
         let mode = isStreamingMode ? "streaming" : "block"
         print("🎙️ Starting recording in \(mode) mode")
         
@@ -429,6 +432,9 @@ class AudioManager: ObservableObject {
         DispatchQueue.main.async {
             self.isRecording = false
             self.hideNotchIndicator()
+            
+            // Post notification that recording has stopped
+            NotificationCenter.default.post(name: Notification.Name("RecordingStopped"), object: nil)
         }
         
         // Stop speech detection

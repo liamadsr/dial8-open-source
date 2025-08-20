@@ -611,6 +611,10 @@ class GlobalHotkeyManager: ObservableObject {
     // Start recording for transcription (helper method)
     private func startRecordingForTranscription() {
         print("🎙️ Starting transcription")
+        
+        // Stop TTS if it's playing
+        TextToSpeechService.shared.stop()
+        
         recordingMode = .transcriptionOnly
         audioManager.setRecordingMode(recordingMode)
         audioManager.startRecording()

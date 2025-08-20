@@ -125,6 +125,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate, SPUStand
         // Setup feature flags defaults
         FeatureFlags.setupDefaults()
         
+        // Initialize and start TTS Manager
+        TTSManager.shared.start()
+        print("🔊 TTS Manager initialized and started")
+        
         // Set up window transparency for all windows
         NSApplication.shared.windows.forEach { window in
             configureWindow(window)
