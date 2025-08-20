@@ -4,7 +4,7 @@ import SwiftUI
 class TTSHUDWindow: NSPanel {
     init() {
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 160, height: 44),
+            contentRect: NSRect(x: 0, y: 0, width: HUDLayout.expandedWidth, height: HUDLayout.height),
             styleMask: [.nonactivatingPanel, .borderless, .hudWindow],
             backing: .buffered,
             defer: false
@@ -42,7 +42,7 @@ class TTSHUDController: NSWindowController {
         
         let hostingView = NSHostingView(rootView: contentView)
         hostingView.wantsLayer = true
-        hostingView.layer?.cornerRadius = 16
+        hostingView.layer?.cornerRadius = HUDLayout.cornerRadius
         hostingView.layer?.masksToBounds = true
         
         window.contentView = hostingView
@@ -67,11 +67,11 @@ class TTSHUDController: NSWindowController {
         let paddingAboveDock: CGFloat = 10
         let bottomPadding = dockHeight + paddingAboveDock
         
-        // Position slightly to the right of center to avoid overlapping with recording HUD
-        let xPos = screen.frame.midX + 100
+        // Position at exact same spot as recording HUD (using expanded width)
+        let xPos = screen.frame.midX - (HUDLayout.expandedWidth / 2)
         let yPos = screen.frame.minY + bottomPadding
         
-        window.setFrame(NSRect(x: xPos, y: yPos, width: 160, height: 44), display: true)
+        window.setFrame(NSRect(x: xPos, y: yPos, width: HUDLayout.expandedWidth, height: HUDLayout.height), display: true)
     }
     
     func showAnimated() {
