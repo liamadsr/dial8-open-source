@@ -14,7 +14,7 @@ class TextSelectionMonitor: ObservableObject {
     private var eventMonitor: Any?
     private var lastSelectedText: String?
     private var selectionCheckTimer: Timer?
-    private let selectionCheckDelay: TimeInterval = 0.5 // Wait 500ms after mouse up to check selection
+    private let selectionCheckDelay: TimeInterval = 0.05 // Wait only 50ms after mouse up to check selection
     private var hudController: TTSHUDController?
     private var isCheckingSelection = false
     private var isSwitchingText = false // Flag to prevent auto-dismiss when switching text
@@ -100,10 +100,8 @@ class TextSelectionMonitor: ObservableObject {
         // Don't check if already checking
         guard !isCheckingSelection else { return }
         
-        // Schedule a check after delay
-        selectionCheckTimer = Timer.scheduledTimer(withTimeInterval: selectionCheckDelay, repeats: false) { [weak self] _ in
-            self?.checkForSelectedText()
-        }
+        // Check immediately for faster response
+        checkForSelectedText()
     }
     
     private func checkForSelectedText() {

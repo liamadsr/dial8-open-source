@@ -35,6 +35,8 @@ class TextToSpeechService: NSObject, ObservableObject {
     @Published var currentSpeed: TTSSpeed = .normal {
         didSet {
             updateSpeechRate()
+            // Save speed preference
+            UserDefaults.standard.set(currentSpeed.rawValue, forKey: "TTSSpeed")
         }
     }
     @Published private(set) var isSpeaking: Bool = false
@@ -52,6 +54,13 @@ class TextToSpeechService: NSObject, ObservableObject {
     private override init() {
         super.init()
         synthesizer.delegate = self
+        
+        // Load saved speed preference
+        if let savedSpeed = UserDefaults.standard.object(forKey: "TTSSpeed") as? Float,
+           let speed = TTSSpeed(rawValue: savedSpeed) {
+            currentSpeed = speed
+            print("🔊 TextToSpeechService: Loaded saved speed: \(speed.displayName)")
+        }
         
         print("🔊 TextToSpeechService: Initialized")
     }
