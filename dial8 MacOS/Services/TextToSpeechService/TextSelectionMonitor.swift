@@ -34,7 +34,8 @@ class TextSelectionMonitor: ObservableObject {
         isMonitoring = true
         
         // Monitor mouse events to detect when user might be selecting text
-        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseUp, .rightMouseDown]) { [weak self] event in
+        // Only monitor left mouse up (not right click to avoid interfering with context menus)
+        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseUp]) { [weak self] event in
             self?.handleMouseEvent(event)
         }
     }
@@ -83,10 +84,6 @@ class TextSelectionMonitor: ObservableObject {
         switch event.type {
         case .leftMouseUp:
             // User released mouse - might have selected text
-            // Wait a bit then check for selection
-            scheduleSelectionCheck()
-        case .rightMouseDown:
-            // Right click - might open context menu on selected text
             scheduleSelectionCheck()
         default:
             break
