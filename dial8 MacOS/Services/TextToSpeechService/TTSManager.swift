@@ -48,11 +48,11 @@ class TTSManager: ObservableObject {
             ttsService.stop()
         }
         
+        // Force dismiss any TTS HUD that might be showing
+        selectionMonitor.forceHideHUD()
+        
         // Temporarily disable selection monitoring
         selectionMonitor.stopMonitoring()
-        
-        // Hide any TTS HUD that might be showing
-        NotificationCenter.default.post(name: Notification.Name("TTSHUDDismissed"), object: nil)
     }
     
     func resumeTTSAfterRecording() {

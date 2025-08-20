@@ -17,6 +17,8 @@ class TextSelectionMonitor: ObservableObject {
     private let selectionCheckDelay: TimeInterval = 0.5 // Wait 500ms after mouse up to check selection
     private var hudController: TTSHUDController?
     private var isCheckingSelection = false
+    private var isSwitchingText = false // Flag to prevent auto-dismiss when switching text
+    private var lastHUDActionTime: Date = Date.distantPast // Track last HUD show/hide to prevent rapid changes
     
     // MARK: - Initialization
     private init() {
@@ -58,6 +60,21 @@ class TextSelectionMonitor: ObservableObject {
         
         // Hide HUD if it's showing
         hideHUD()
+    }
+    
+    func forceHideHUD() {
+        print("📋 TextSelectionMonitor: Force hiding TTS HUD")
+        
+        // Clear flags that might prevent hiding
+        isSwitchingText = false
+        
+        // Force hide the HUD
+        hideHUD(force: true)
+        
+        // Clear state
+        hasSelectedText = false
+        selectedText = nil
+        lastSelectedText = nil
     }
     
     // MARK: - Private Methods
@@ -108,49 +125,124 @@ class TextSelectionMonitor: ObservableObject {
         // Only process if selection has actually changed
         guard text != lastSelectedText else { return }
         
+        print("📋 TextSelectionMonitor: Selection changed from '\(lastSelectedText?.prefix(20) ?? "nil")' to '\(text?.prefix(20) ?? "nil")'")
+        
         lastSelectedText = text
         selectedText = text
         hasSelectedText = (text != nil && !text!.isEmpty)
         
-        print("📋 TextSelectionMonitor: Selection changed - hasText: \(hasSelectedText)")
-        
         if hasSelectedText, let text = text {
-            // Show TTS HUD
+            // Always show/update TTS HUD when we have selected text
             showTTSHUD(with: text)
         } else {
-            // Hide HUD if no text selected
-            hideHUD()
+            // Text was deselected
+            
+            // Check if we're in the process of switching text
+            if isSwitchingText {
+                print("📋 TextSelectionMonitor: Ignoring deselection - currently switching text")
+                return
+            }
+            
+            // Only hide HUD if TTS is not currently playing
+            if TextToSpeechService.shared.state == .idle {
+                // Add a small delay to avoid race conditions
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                    // Double-check state hasn't changed
+                    if TextToSpeechService.shared.state == .idle && self?.hasSelectedText == false {
+                        self?.hideHUD()
+                    }
+                }
+            } else {
+                print("📋 TextSelectionMonitor: Text deselected but TTS is playing, keeping HUD visible")
+            }
         }
     }
     
     private func showTTSHUD(with text: String) {
         print("📋 TextSelectionMonitor: Showing TTS HUD for text: \(text.prefix(50))...")
         
-        // Hide existing HUD if any
-        hideHUD()
+        // Check if we have an existing HUD controller
+        let hasExistingController = hudController != nil
+        let isHUDVisible = hudController?.window?.isVisible == true
         
-        // Create new TTS HUD
+        // Check if TTS is currently playing BEFORE we stop it
+        let wasPlaying = TextToSpeechService.shared.state == .playing || TextToSpeechService.shared.state == .paused
+        
+        print("📋 TextSelectionMonitor: hasExistingController=\(hasExistingController), isHUDVisible=\(isHUDVisible), wasPlaying=\(wasPlaying)")
+        
+        // Set flag to indicate we're switching text
+        if wasPlaying {
+            isSwitchingText = true
+        }
+        
+        // Stop current playback if playing
+        if TextToSpeechService.shared.state == .playing {
+            print("📋 TextSelectionMonitor: Stopping current TTS playback")
+            TextToSpeechService.shared.stop()
+        }
+        
+        // Update to new text
+        TextToSpeechService.shared.currentText = text
+        
         DispatchQueue.main.async { [weak self] in
-            let hudController = TTSHUDController()
-            self?.hudController = hudController
-            hudController.showAnimated()
+            guard let self = self else { return }
             
-            // Start speaking the text
-            TextToSpeechService.shared.speak(text: text)
+            // If we have an existing controller and it's visible, just reset it
+            if let existingController = self.hudController, isHUDVisible {
+                print("📋 TextSelectionMonitor: Resetting existing HUD for new text")
+                existingController.resetForNewText()
+            } else {
+                // Need to create a new HUD
+                print("📋 TextSelectionMonitor: Creating new TTS HUD")
+                
+                // Clear any existing controller reference
+                self.hudController = nil
+                
+                // Create new TTS HUD
+                let hudController = TTSHUDController()
+                self.hudController = hudController
+                hudController.showAnimated()
+                
+                // Remove any existing observers first
+                NotificationCenter.default.removeObserver(self, name: Notification.Name("TTSHUDDismissed"), object: nil)
+                NotificationCenter.default.removeObserver(self, name: Notification.Name("TTSDidFinish"), object: nil)
+                
+                // Listen for dismiss notification
+                NotificationCenter.default.addObserver(
+                    self,
+                    selector: #selector(self.handleTTSHUDDismiss),
+                    name: Notification.Name("TTSHUDDismissed"),
+                    object: nil
+                )
+                
+                // Listen for TTS finish notification to auto-dismiss
+                NotificationCenter.default.addObserver(
+                    self,
+                    selector: #selector(self.handleTTSDidFinish),
+                    name: Notification.Name("TTSDidFinish"),
+                    object: nil
+                )
+            }
             
-            // Listen for dismiss notification
-            NotificationCenter.default.addObserver(
-                self as Any,
-                selector: #selector(self?.handleTTSHUDDismiss),
-                name: Notification.Name("TTSHUDDismissed"),
-                object: nil
-            )
+            // Clear the switching flag after a delay
+            if wasPlaying {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.isSwitchingText = false
+                }
+            }
         }
     }
     
-    private func hideHUD() {
+    private func hideHUD(force: Bool = false) {
+        // Don't hide if we're switching text (unless forced)
+        if !force && isSwitchingText {
+            print("📋 TextSelectionMonitor: Skipping hide - currently switching text")
+            return
+        }
+        
+        print("📋 TextSelectionMonitor: Hiding TTS HUD (force: \(force))")
         DispatchQueue.main.async { [weak self] in
-            self?.hudController?.hideAnimated()
+            self?.hudController?.hideAnimated(isUserDismiss: force)
             self?.hudController = nil
         }
     }
@@ -158,12 +250,32 @@ class TextSelectionMonitor: ObservableObject {
     @objc private func handleTTSHUDDismiss() {
         print("📋 TextSelectionMonitor: TTS HUD dismissed")
         
+        // Clear the HUD controller reference
+        hudController = nil
+        
         // Clear selection state
         selectedText = nil
         hasSelectedText = false
         lastSelectedText = nil
         
-        // Remove observer
+        // Remove observers
+        NotificationCenter.default.removeObserver(self, name: Notification.Name("TTSHUDDismissed"), object: nil)
+        NotificationCenter.default.removeObserver(self, name: Notification.Name("TTSDidFinish"), object: nil)
+    }
+    
+    @objc private func handleTTSDidFinish() {
+        print("📋 TextSelectionMonitor: TTS finished playing, auto-dismissing HUD")
+        
+        // Auto-dismiss the HUD when TTS finishes
+        hideHUD()
+        
+        // Clear selection state
+        selectedText = nil
+        hasSelectedText = false
+        lastSelectedText = nil
+        
+        // Remove observers
+        NotificationCenter.default.removeObserver(self, name: Notification.Name("TTSDidFinish"), object: nil)
         NotificationCenter.default.removeObserver(self, name: Notification.Name("TTSHUDDismissed"), object: nil)
     }
     

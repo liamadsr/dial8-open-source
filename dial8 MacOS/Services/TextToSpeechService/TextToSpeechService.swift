@@ -38,7 +38,7 @@ class TextToSpeechService: NSObject, ObservableObject {
         }
     }
     @Published private(set) var isSpeaking: Bool = false
-    @Published private(set) var currentText: String?
+    @Published var currentText: String?
     @Published private(set) var progress: Float = 0.0
     
     // MARK: - Private Properties
@@ -126,7 +126,7 @@ class TextToSpeechService: NSObject, ObservableObject {
         
         print("🔊 TextToSpeechService: Stopping speech")
         synthesizer.stopSpeaking(at: .immediate)
-        state = .stopped
+        state = .idle  // Set to idle instead of stopped so UI shows correct state
         isSpeaking = false
         currentUtterance = nil
         progress = 0.0

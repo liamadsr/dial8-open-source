@@ -42,15 +42,23 @@ struct TTSHUDView: View {
                         TTSProgressBars()
                             .frame(width: 52) // Same width as recording waveform area
                     } else {
-                        // Show speed selector when not playing
-                        Button(action: {
-                            showingSpeedPopover.toggle()
-                        }) {
-                            Text(ttsService.currentSpeed.displayName)
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundColor(.white.opacity(0.7))
+                        // Show hint or speed selector
+                        VStack(spacing: 2) {
+                            if ttsService.currentText != nil {
+                                Text("Press Space")
+                                    .font(.system(size: 8, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.7))
+                            }
+                            
+                            Button(action: {
+                                showingSpeedPopover.toggle()
+                            }) {
+                                Text(ttsService.currentSpeed.displayName)
+                                    .font(.system(size: 9, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.7))
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        .buttonStyle(PlainButtonStyle())
                         .frame(width: 52)
                         .popover(isPresented: $showingSpeedPopover, arrowEdge: .top) {
                             VStack(spacing: 0) {
