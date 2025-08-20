@@ -16,8 +16,8 @@ struct TTSHUDView: View {
                     .stroke(Color(white: 0.6, opacity: 0.7), lineWidth: 1.2)
             )
             .overlay(
-                HStack(spacing: 12) {
-                    // Play/Pause button on the left
+                HStack(spacing: 0) {
+                    // Play/Pause button on the left with extra padding
                     Button(action: {
                         ttsService.togglePlayPause()
                     }) {
@@ -33,8 +33,11 @@ struct TTSHUDView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                     .help(playPauseTooltip)
+                    .padding(.leading, 6)  // Extra padding from left edge
                     
-                    // Progress visualization in center (similar to waveform)
+                    Spacer()
+                    
+                    // Center content area - progress bars or speed selector
                     if ttsService.state != .idle {
                         TTSProgressBars()
                             .frame(width: 52) // Same width as recording waveform area
@@ -77,7 +80,9 @@ struct TTSHUDView: View {
                         }
                     }
                     
-                    // Stop button on the right
+                    Spacer()
+                    
+                    // Stop button on the right with extra padding
                     Button(action: {
                         ttsService.stop()
                         onDismiss()
@@ -94,8 +99,9 @@ struct TTSHUDView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                     .help("Stop")
+                    .padding(.trailing, 6)  // Extra padding from right edge
                 }
-                .padding(.horizontal, 10)
+                .padding(.horizontal, 8)
                 .padding(.vertical, 4)
             )
             .frame(width: HUDLayout.expandedWidth, height: HUDLayout.height)
