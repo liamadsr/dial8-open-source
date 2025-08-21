@@ -90,10 +90,10 @@ class TTSAudioMonitor: ObservableObject {
     @Published var smoothedLevel: Float = 0.0
     @Published var isActive: Bool = false
     
-    // Configuration - matching STT exactly for consistency
+    // Configuration - matching STT timing but adjusted levels for TTS
     private let noiseFloor: Float = 0.005 // Balanced threshold
     private let smoothingFactor: Float = 0.0 // No smoothing - not used anymore
-    private let amplificationFactor: Float = 5.0 // Moderate amplification for controlled height
+    private let amplificationFactor: Float = 1.8 // Further reduced amplification for TTS
     private let updateInterval: TimeInterval = 0.008 // ~125Hz for ultra-smooth motion
     
     // Processing state
