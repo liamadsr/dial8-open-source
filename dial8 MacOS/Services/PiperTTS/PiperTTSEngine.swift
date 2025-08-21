@@ -160,8 +160,14 @@ class PiperTTSEngine: NSObject, ObservableObject {
             
             // Write WAV file
             if self.writeWAVFile(data: audioData, to: tempURL, sampleRate: Int(sampleRate)) {
+                // Calculate true duration from original audio data
+                let originalSampleCount = audioData.count / 2  // 16-bit samples = 2 bytes each
+                let originalDuration = Double(originalSampleCount) / Double(sampleRate)
+                // Add adjustment factor for processing delays and potential silence
+                let adjustedDuration = originalDuration * 1.2  // Add 20% to account for delays
+                
                 DispatchQueue.main.async {
-                    self.playAudioFile(at: tempURL)
+                    self.playAudioFile(at: tempURL, originalDuration: adjustedDuration)
                 }
             } else {
                 print("🎤 PiperTTS: Failed to write audio file")
@@ -195,7 +201,7 @@ class PiperTTSEngine: NSObject, ObservableObject {
         isPaused = false
     }
     
-    private func playAudioFile(at url: URL) {
+    private func playAudioFile(at url: URL, originalDuration: TimeInterval? = nil) {
         do {
             audioFile = try AVAudioFile(forReading: url)
             
@@ -360,10 +366,15 @@ class PiperTTSEngine: NSObject, ObservableObject {
                 }
             }
             
-            // Calculate audio duration
-            let totalFrames = buffer.frameLength
-            let sampleRate = outputFormat.sampleRate
-            audioDuration = Double(totalFrames) / sampleRate
+            // Use the original duration if provided, otherwise calculate from buffer
+            if let originalDuration = originalDuration {
+                audioDuration = originalDuration
+            } else {
+                // Fallback: calculate from buffer (might be less accurate due to conversion)
+                let totalFrames = buffer.frameLength
+                let sampleRate = outputFormat.sampleRate
+                audioDuration = Double(totalFrames) / sampleRate
+            }
             
             // Start playback
             playerNode.play()
