@@ -65,8 +65,9 @@ class TextToSpeechService: NSObject, ObservableObject {
         piperTTS.speechRate = currentSpeed.rawValue
         
         // Observe PiperTTS state changes
-        piperTTS.$isPlaying
-            .sink { [weak self] isPlaying in
+        // Use combineLatest to observe both isPlaying and isPaused together
+        Publishers.CombineLatest(piperTTS.$isPlaying, piperTTS.$isPaused)
+            .sink { [weak self] (isPlaying, isPaused) in
                 guard let self = self else { return }
                 
                 // Don't trigger finish if we're just starting speech
@@ -74,8 +75,24 @@ class TextToSpeechService: NSObject, ObservableObject {
                     return
                 }
                 
-                if !isPlaying && self.state == .playing {
+                print("🔊 TextToSpeechService: PiperTTS state changed - isPlaying: \(isPlaying), isPaused: \(isPaused), current state: \(self.state)")
+                
+                // Only trigger finish if playback stopped (not paused)
+                if !isPlaying && !isPaused && self.state == .playing {
+                    print("🔊 TextToSpeechService: Triggering handleSpeechFinished (playback stopped)")
                     self.handleSpeechFinished()
+                }
+            }
+            .store(in: &cancellables)
+        
+        // Observe PiperTTS progress changes
+        piperTTS.$progress
+            .sink { [weak self] piperProgress in
+                guard let self = self else { return }
+                
+                // Update our progress if using Piper
+                if self.state == .playing || self.state == .paused {
+                    self.progress = piperProgress
                 }
             }
             .store(in: &cancellables)
@@ -125,8 +142,8 @@ class TextToSpeechService: NSObject, ObservableObject {
         guard state == .playing else { return }
         
         print("🔊 TextToSpeechService: Pausing speech")
+        state = .paused  // Set state BEFORE calling pause to avoid race condition
         piperTTS.pause()
-        state = .paused
     }
     
     func resume() {

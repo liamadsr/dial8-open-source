@@ -11,6 +11,7 @@ class PiperTTSEngine: NSObject, ObservableObject {
     // MARK: - Published Properties
     @Published var isPlaying = false
     @Published var isPaused = false
+    @Published var progress: Float = 0.0  // Track playback progress
     @Published var currentVoice: PiperVoice = .amy {
         didSet {
             UserDefaults.standard.set(currentVoice.rawValue, forKey: "PiperTTSVoice")
@@ -43,6 +44,10 @@ class PiperTTSEngine: NSObject, ObservableObject {
     private let playerNode = AVAudioPlayerNode()
     private var audioFile: AVAudioFile?
     private var isUsingPiper = false
+    private var progressTimer: Timer?
+    private var audioDuration: TimeInterval = 0
+    private var playbackStartTime: Date?
+    private var pausedProgress: Float = 0.0  // Store progress when paused
     
     // MARK: - Initialization
     override init() {
@@ -126,6 +131,7 @@ class PiperTTSEngine: NSObject, ObservableObject {
         // Set playing state immediately to prevent HUD from dismissing
         isPlaying = true
         isPaused = false
+        isUsingPiper = true  // Mark that we're using Piper for this playback
         
         // Generate speech in background
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -136,6 +142,7 @@ class PiperTTSEngine: NSObject, ObservableObject {
                 print("🎤 PiperTTS: Failed to generate speech, falling back to system")
                 DispatchQueue.main.async {
                     self.isPlaying = false
+                    self.isUsingPiper = false  // Reset flag since we're falling back
                     self.speakWithSystem(text: text, completion: completion)
                 }
                 return
@@ -155,6 +162,7 @@ class PiperTTSEngine: NSObject, ObservableObject {
                 DispatchQueue.main.async {
                     self.isPlaying = false
                     self.isPaused = false
+                    self.isUsingPiper = false  // Reset flag
                     completion?()
                 }
             }
@@ -163,6 +171,10 @@ class PiperTTSEngine: NSObject, ObservableObject {
     
     private func speakWithSystem(text: String, completion: (() -> Void)? = nil) {
         print("🎤 PiperTTS: Using system TTS as fallback")
+        
+        // Reset progress for system TTS
+        progress = 0.0
+        isUsingPiper = false  // Mark that we're using system TTS
         
         let utterance = AVSpeechUtterance(string: text)
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate * speechRate
@@ -324,6 +336,8 @@ class PiperTTSEngine: NSObject, ObservableObject {
             playerNode.scheduleBuffer(buffer, at: nil, options: []) { [weak self] in
                 DispatchQueue.main.async {
                     self?.isPlaying = false
+                    self?.progress = 1.0  // Ensure progress shows complete
+                    self?.stopProgressTimer()
                     self?.completionHandler?()
                     
                     // Clean up temp file
@@ -331,11 +345,22 @@ class PiperTTSEngine: NSObject, ObservableObject {
                 }
             }
             
+            // Calculate audio duration
+            let totalFrames = buffer.frameLength
+            let sampleRate = outputFormat.sampleRate
+            audioDuration = Double(totalFrames) / sampleRate
+            
             // Start playback
             playerNode.play()
+            playbackStartTime = Date()
+            progress = 0.0
+            
+            // Start progress timer
+            startProgressTimer()
+            
             // Note: isPlaying already set to true in speakWithPiper to prevent HUD dismissal
             
-            print("🎤 PiperTTS: Playing Piper-generated audio (format: \(outputFormat))")
+            print("🎤 PiperTTS: Playing Piper-generated audio (format: \(outputFormat), duration: \(audioDuration)s)")
             
         } catch {
             print("🎤 PiperTTS: Failed to play audio: \(error)")
@@ -390,26 +415,36 @@ class PiperTTSEngine: NSObject, ObservableObject {
     func pause() {
         guard isPlaying else { return }
         
+        // Set paused state FIRST to avoid race condition with observers
+        isPaused = true
+        isPlaying = false
+        
         if isUsingPiper && currentVoice == .amy {
             playerNode.pause()
+            stopProgressTimer()
+            pausedProgress = progress  // Save current progress
         } else {
             synthesizer.pauseSpeaking(at: .immediate)
         }
-        isPaused = true
-        isPlaying = false
     }
     
     /// Resume playback
     func resume() {
         guard isPaused else { return }
         
+        // Set playing state FIRST to avoid race condition with observers
+        isPaused = false
+        isPlaying = true
+        
         if isUsingPiper && currentVoice == .amy {
             playerNode.play()
+            // Resume from paused progress
+            let remainingDuration = audioDuration * Double(1.0 - pausedProgress)
+            playbackStartTime = Date().addingTimeInterval(-Double(pausedProgress) * audioDuration)
+            startProgressTimer()
         } else {
             synthesizer.continueSpeaking()
         }
-        isPaused = false
-        isPlaying = true
     }
     
     /// Stop playback
@@ -420,6 +455,10 @@ class PiperTTSEngine: NSObject, ObservableObject {
         isPaused = false
         isUsingPiper = false
         completionHandler = nil
+        progress = 0.0
+        stopProgressTimer()
+        playbackStartTime = nil
+        audioDuration = 0
     }
     
     /// Toggle play/pause
@@ -435,6 +474,37 @@ class PiperTTSEngine: NSObject, ObservableObject {
     func getAvailableVoices() -> [PiperVoice] {
         return PiperVoice.allCases
     }
+    
+    // MARK: - Progress Tracking
+    
+    private func startProgressTimer() {
+        stopProgressTimer()
+        
+        progressTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
+            self?.updateProgress()
+        }
+    }
+    
+    private func stopProgressTimer() {
+        progressTimer?.invalidate()
+        progressTimer = nil
+    }
+    
+    private func updateProgress() {
+        guard let startTime = playbackStartTime,
+              audioDuration > 0 else { return }
+        
+        let elapsed = Date().timeIntervalSince(startTime)
+        let currentProgress = Float(min(elapsed / audioDuration, 1.0))
+        
+        // Update progress
+        progress = currentProgress
+        
+        // Stop timer if playback finished
+        if currentProgress >= 1.0 {
+            stopProgressTimer()
+        }
+    }
 }
 
 // MARK: - AVSpeechSynthesizerDelegate
@@ -442,11 +512,22 @@ extension PiperTTSEngine: AVSpeechSynthesizerDelegate {
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
         isPlaying = true
         isPaused = false
+        progress = 0.0
+    }
+    
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
+        // Update progress based on character position
+        let totalLength = utterance.speechString.count
+        if totalLength > 0 {
+            let currentPosition = characterRange.location + characterRange.length
+            progress = Float(currentPosition) / Float(totalLength)
+        }
     }
     
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
         isPlaying = false
         isPaused = false
+        progress = 1.0
         completionHandler?()
         completionHandler = nil
     }
@@ -464,6 +545,7 @@ extension PiperTTSEngine: AVSpeechSynthesizerDelegate {
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
         isPlaying = false
         isPaused = false
+        progress = 0.0
         completionHandler = nil
     }
 }
