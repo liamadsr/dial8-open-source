@@ -138,7 +138,6 @@ class PermissionManager {
         print("🔑 PERMISSION: Checking accessibility permission")
         #if os(macOS)
         let result = AXIsProcessTrusted()
-        print("🔑 PERMISSION: Accessibility permission status: \(result)")
         return result
         #else
         return true

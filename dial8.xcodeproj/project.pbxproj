@@ -28,16 +28,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		2368A9712D714DF900BDFFE7 /* Copy LLM Ex */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Ollama;
-			dstSubfolderSpec = 7;
-			files = (
-			);
-			name = "Copy LLM Ex";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		2368A9862D714F9D00BDFFE7 /* Copy Files */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -48,12 +38,22 @@
 			name = "Copy Files";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		23A7EAEE2E56BC5700C37745 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		2369467F2CB1F357002E8CBD /* Dial8.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Dial8.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2369468F2CB1F359002E8CBD /* dial8 MacOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "dial8 MacOSTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		236946992CB1F359002E8CBD /* dial8 MacOSUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "dial8 MacOSUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		23A7EAE82E56BA9000C37745 /* libsherpa-onnx-c.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = "libsherpa-onnx-c.dylib"; sourceTree = "<group>"; };
 		23C7616C2C92231E0094B283 /* dial8Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = dial8Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		23C761762C92231E0094B283 /* dial8UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = dial8UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -63,6 +63,10 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Content/Assets.xcassets,
+				Services/PiperTTS/PiperTTSService.swift.disabled,
+				"Services/PiperTTS/SherpaOnnx-Bridging-Header.h.disabled",
+				Services/PiperTTS/SherpaOnnxTTS.swift.disabled,
+				Services/TextProcessingService/TextProcessingServiceRequierments.md,
 			);
 			target = 2369467E2CB1F357002E8CBD /* dial8 MacOS */;
 		};
@@ -90,6 +94,16 @@
 				Frameworks/Squirrel.framework,
 			);
 		};
+		23A7EAF02E56BCA300C37745 /* Exceptions for "Resources" folder in "Copy Files" phase from "dial8 MacOS" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			attributesByRelativePath = {
+				"Frameworks/libsherpa-onnx-c.dylib" = (CodeSignOnCopy, );
+			};
+			buildPhase = 23A7EAEE2E56BC5700C37745 /* CopyFiles */;
+			membershipExceptions = (
+				"Frameworks/libsherpa-onnx-c.dylib",
+			);
+		};
 /* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -106,6 +120,7 @@
 			exceptions = (
 				236D39C32CDDA2E400F8B429 /* Exceptions for "Resources" folder in "dial8 MacOS" target */,
 				2368A98F2D714FB200BDFFE7 /* Exceptions for "Resources" folder in "Copy Files" phase from "dial8 MacOS" target */,
+				23A7EAF02E56BCA300C37745 /* Exceptions for "Resources" folder in "Copy Files" phase from "dial8 MacOS" target */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -155,6 +170,7 @@
 		2312C60D2C92673500B8A315 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				23A7EAE82E56BA9000C37745 /* libsherpa-onnx-c.dylib */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -191,8 +207,8 @@
 				2369467B2CB1F357002E8CBD /* Sources */,
 				2369467C2CB1F357002E8CBD /* Frameworks */,
 				2369467D2CB1F357002E8CBD /* Resources */,
-				2368A9712D714DF900BDFFE7 /* Copy LLM Ex */,
 				2368A9862D714F9D00BDFFE7 /* Copy Files */,
+				23A7EAEE2E56BC5700C37745 /* CopyFiles */,
 			);
 			buildRules = (
 			);
