@@ -38,13 +38,14 @@
 			name = "Copy Files";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		23A7EAEE2E56BC5700C37745 /* CopyFiles */ = {
+		23A7EAEE2E56BC5700C37745 /* Copy Files */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 12;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
 			);
+			name = "Copy Files";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -99,7 +100,7 @@
 			attributesByRelativePath = {
 				"Frameworks/libsherpa-onnx-c.dylib" = (CodeSignOnCopy, );
 			};
-			buildPhase = 23A7EAEE2E56BC5700C37745 /* CopyFiles */;
+			buildPhase = 23A7EAEE2E56BC5700C37745 /* Copy Files */;
 			membershipExceptions = (
 				"Frameworks/libsherpa-onnx-c.dylib",
 			);
@@ -208,7 +209,7 @@
 				2369467C2CB1F357002E8CBD /* Frameworks */,
 				2369467D2CB1F357002E8CBD /* Resources */,
 				2368A9862D714F9D00BDFFE7 /* Copy Files */,
-				23A7EAEE2E56BC5700C37745 /* CopyFiles */,
+				23A7EAEE2E56BC5700C37745 /* Copy Files */,
 			);
 			buildRules = (
 			);

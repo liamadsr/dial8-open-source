@@ -9,14 +9,16 @@ struct TTSHUDView: View {
     var onDismiss: () -> Void
     
     var body: some View {
-        RoundedRectangle(cornerRadius: HUDLayout.cornerRadius)
-            .fill(Color.black)
-            .overlay(
-                // Thin gray outline
-                RoundedRectangle(cornerRadius: HUDLayout.cornerRadius)
-                    .stroke(Color(white: 0.6, opacity: 0.7), lineWidth: 1.2)
-            )
-            .overlay(
+        ZStack {
+            // Main HUD content
+            RoundedRectangle(cornerRadius: HUDLayout.cornerRadius)
+                .fill(Color.black)
+                .overlay(
+                    // Thin gray outline
+                    RoundedRectangle(cornerRadius: HUDLayout.cornerRadius)
+                        .stroke(Color(white: 0.6, opacity: 0.7), lineWidth: 1.2)
+                )
+                .overlay(
                 HStack(spacing: 0) {
                     // Play/Pause button on the left with extra padding
                     Button(action: {
@@ -38,9 +40,9 @@ struct TTSHUDView: View {
                     
                     Spacer()
                     
-                    // Center content area - progress bars or speed selector
+                    // Center content area - audio waveform or speed selector
                     if ttsService.state != .idle {
-                        TTSProgressBars()
+                        TTSAudioWaveformView()
                             .frame(width: 52) // Same width as recording waveform area
                     } else {
                         // Show hint or speed selector
@@ -137,6 +139,16 @@ struct TTSHUDView: View {
                     // Animation completed
                 }
             }
+            
+            // Circular progress overlay
+            if ttsService.state == .playing || ttsService.state == .paused {
+                TTSCircularProgressView(progress: ttsService.progress)
+                    .frame(width: HUDLayout.expandedWidth, height: HUDLayout.height)
+                    .allowsHitTesting(false)  // Don't interfere with buttons
+                    .scaleEffect(x: 1, y: animationState.scaleY, anchor: .center)
+                    .opacity(animationState.opacity)
+            }
+        }
     }
     
     private var playPauseIcon: String {
@@ -160,54 +172,189 @@ struct TTSHUDView: View {
     }
 }
 
-// Progress bars visualization similar to audio waveform
-struct TTSProgressBars: View {
-    @ObservedObject var ttsService = TextToSpeechService.shared
-    @State private var animatingBar = 0
-    
-    let barCount = 8
-    let timer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+// Circular progress view that draws around the border
+struct TTSCircularProgressView: View {
+    let progress: Float
     
     var body: some View {
-        HStack(spacing: 2) {
-            ForEach(0..<barCount, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(barColor(for: index))
-                    .frame(width: 3, height: barHeight(for: index))
-                    .animation(.easeInOut(duration: 0.2), value: animatingBar)
+        GeometryReader { geometry in
+            let width = geometry.size.width
+            let height = geometry.size.height
+            let cornerRadius = HUDLayout.cornerRadius
+            
+            // Calculate the perimeter of the rounded rectangle
+            let straightSides = 2 * (width + height - 2 * cornerRadius)
+            let corners = 2 * .pi * cornerRadius
+            let totalPerimeter = straightSides + corners
+            
+            // Create the progress path
+            Path { path in
+                let rect = CGRect(x: 0, y: 0, width: width, height: height)
+                let progressLength = CGFloat(progress) * totalPerimeter
+                var currentLength: CGFloat = 0
+                
+                // Start from top center
+                path.move(to: CGPoint(x: width / 2, y: 0))
+                
+                // Top edge to right
+                let topRightStart = width / 2
+                let topRightLength = width / 2 - cornerRadius
+                if currentLength + topRightLength <= progressLength {
+                    path.addLine(to: CGPoint(x: width - cornerRadius, y: 0))
+                    currentLength += topRightLength
+                } else {
+                    let fraction = (progressLength - currentLength) / topRightLength
+                    path.addLine(to: CGPoint(x: topRightStart + topRightLength * fraction, y: 0))
+                    return
+                }
+                
+                // Top right corner
+                if currentLength < progressLength {
+                    let cornerLength = cornerRadius * .pi / 2
+                    if currentLength + cornerLength <= progressLength {
+                        path.addArc(center: CGPoint(x: width - cornerRadius, y: cornerRadius),
+                                   radius: cornerRadius,
+                                   startAngle: .degrees(-90),
+                                   endAngle: .degrees(0),
+                                   clockwise: false)
+                        currentLength += cornerLength
+                    } else {
+                        let fraction = (progressLength - currentLength) / cornerLength
+                        path.addArc(center: CGPoint(x: width - cornerRadius, y: cornerRadius),
+                                   radius: cornerRadius,
+                                   startAngle: .degrees(-90),
+                                   endAngle: .degrees(-90 + Double(90 * fraction)),
+                                   clockwise: false)
+                        return
+                    }
+                }
+                
+                // Right edge
+                if currentLength < progressLength {
+                    let rightLength = height - 2 * cornerRadius
+                    if currentLength + rightLength <= progressLength {
+                        path.addLine(to: CGPoint(x: width, y: height - cornerRadius))
+                        currentLength += rightLength
+                    } else {
+                        let fraction = (progressLength - currentLength) / rightLength
+                        path.addLine(to: CGPoint(x: width, y: cornerRadius + rightLength * fraction))
+                        return
+                    }
+                }
+                
+                // Bottom right corner
+                if currentLength < progressLength {
+                    let cornerLength = cornerRadius * .pi / 2
+                    if currentLength + cornerLength <= progressLength {
+                        path.addArc(center: CGPoint(x: width - cornerRadius, y: height - cornerRadius),
+                                   radius: cornerRadius,
+                                   startAngle: .degrees(0),
+                                   endAngle: .degrees(90),
+                                   clockwise: false)
+                        currentLength += cornerLength
+                    } else {
+                        let fraction = (progressLength - currentLength) / cornerLength
+                        path.addArc(center: CGPoint(x: width - cornerRadius, y: height - cornerRadius),
+                                   radius: cornerRadius,
+                                   startAngle: .degrees(0),
+                                   endAngle: .degrees(Double(90 * fraction)),
+                                   clockwise: false)
+                        return
+                    }
+                }
+                
+                // Bottom edge
+                if currentLength < progressLength {
+                    let bottomLength = width - 2 * cornerRadius
+                    if currentLength + bottomLength <= progressLength {
+                        path.addLine(to: CGPoint(x: cornerRadius, y: height))
+                        currentLength += bottomLength
+                    } else {
+                        let fraction = (progressLength - currentLength) / bottomLength
+                        path.addLine(to: CGPoint(x: width - cornerRadius - bottomLength * fraction, y: height))
+                        return
+                    }
+                }
+                
+                // Bottom left corner
+                if currentLength < progressLength {
+                    let cornerLength = cornerRadius * .pi / 2
+                    if currentLength + cornerLength <= progressLength {
+                        path.addArc(center: CGPoint(x: cornerRadius, y: height - cornerRadius),
+                                   radius: cornerRadius,
+                                   startAngle: .degrees(90),
+                                   endAngle: .degrees(180),
+                                   clockwise: false)
+                        currentLength += cornerLength
+                    } else {
+                        let fraction = (progressLength - currentLength) / cornerLength
+                        path.addArc(center: CGPoint(x: cornerRadius, y: height - cornerRadius),
+                                   radius: cornerRadius,
+                                   startAngle: .degrees(90),
+                                   endAngle: .degrees(90 + Double(90 * fraction)),
+                                   clockwise: false)
+                        return
+                    }
+                }
+                
+                // Left edge
+                if currentLength < progressLength {
+                    let leftLength = height - 2 * cornerRadius
+                    if currentLength + leftLength <= progressLength {
+                        path.addLine(to: CGPoint(x: 0, y: cornerRadius))
+                        currentLength += leftLength
+                    } else {
+                        let fraction = (progressLength - currentLength) / leftLength
+                        path.addLine(to: CGPoint(x: 0, y: height - cornerRadius - leftLength * fraction))
+                        return
+                    }
+                }
+                
+                // Top left corner
+                if currentLength < progressLength {
+                    let cornerLength = cornerRadius * .pi / 2
+                    if currentLength + cornerLength <= progressLength {
+                        path.addArc(center: CGPoint(x: cornerRadius, y: cornerRadius),
+                                   radius: cornerRadius,
+                                   startAngle: .degrees(180),
+                                   endAngle: .degrees(270),
+                                   clockwise: false)
+                        currentLength += cornerLength
+                    } else {
+                        let fraction = (progressLength - currentLength) / cornerLength
+                        path.addArc(center: CGPoint(x: cornerRadius, y: cornerRadius),
+                                   radius: cornerRadius,
+                                   startAngle: .degrees(180),
+                                   endAngle: .degrees(180 + Double(90 * fraction)),
+                                   clockwise: false)
+                        return
+                    }
+                }
+                
+                // Top edge back to center
+                if currentLength < progressLength {
+                    let topLeftLength = width / 2 - cornerRadius
+                    if currentLength + topLeftLength <= progressLength {
+                        path.addLine(to: CGPoint(x: width / 2, y: 0))
+                    } else {
+                        let fraction = (progressLength - currentLength) / topLeftLength
+                        path.addLine(to: CGPoint(x: cornerRadius + topLeftLength * fraction, y: 0))
+                    }
+                }
             }
-        }
-        .onReceive(timer) { _ in
-            if ttsService.state == .playing {
-                animatingBar = (animatingBar + 1) % barCount
-            }
-        }
-    }
-    
-    private func barHeight(for index: Int) -> CGFloat {
-        if ttsService.state == .playing {
-            // Animate bars based on progress
-            let progressIndex = Int(ttsService.progress * Float(barCount))
-            if index <= progressIndex {
-                return animatingBar == index ? 14 : 8
-            } else {
-                return 2
-            }
-        } else if ttsService.state == .paused {
-            // Show static progress when paused
-            let progressIndex = Int(ttsService.progress * Float(barCount))
-            return index <= progressIndex ? 8 : 2
-        } else {
-            return 2
-        }
-    }
-    
-    private func barColor(for index: Int) -> Color {
-        let progressIndex = Int(ttsService.progress * Float(barCount))
-        if index <= progressIndex {
-            return Color.white
-        } else {
-            return Color.white.opacity(0.3)
+            .stroke(
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.white.opacity(0.9),
+                        Color.white.opacity(0.7),
+                        Color.white.opacity(0.5)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                ),
+                style: StrokeStyle(lineWidth: 2.5, lineCap: .round)
+            )
+            .animation(.linear(duration: 0.1), value: progress)
         }
     }
 }

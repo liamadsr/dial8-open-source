@@ -49,6 +49,9 @@ class PiperTTSEngine: NSObject, ObservableObject {
     private var playbackStartTime: Date?
     private var pausedProgress: Float = 0.0  // Store progress when paused
     
+    // MARK: - Audio Monitor for TTS
+    private let ttsAudioMonitor = TTSAudioMonitor.shared
+    
     // MARK: - Initialization
     override init() {
         super.init()
@@ -132,6 +135,9 @@ class PiperTTSEngine: NSObject, ObservableObject {
         isPlaying = true
         isPaused = false
         isUsingPiper = true  // Mark that we're using Piper for this playback
+        
+        // Start audio monitoring for TTS waveform
+        ttsAudioMonitor.startMonitoring()
         
         // Generate speech in background
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -330,6 +336,14 @@ class PiperTTSEngine: NSObject, ObservableObject {
             
             // Disconnect and reconnect with the proper format
             audioEngine.disconnectNodeOutput(playerNode)
+            
+            // Remove old tap and install new one with TTS audio monitor
+            playerNode.removeTap(onBus: 0)
+            playerNode.installTap(onBus: 0, bufferSize: 1024, format: outputFormat) { [weak self] buffer, time in
+                // Send audio buffer to TTS monitor for visualization
+                self?.ttsAudioMonitor.processAudioBuffer(buffer)
+            }
+            
             audioEngine.connect(playerNode, to: audioEngine.mainMixerNode, format: outputFormat)
             
             // Schedule buffer
@@ -338,6 +352,7 @@ class PiperTTSEngine: NSObject, ObservableObject {
                     self?.isPlaying = false
                     self?.progress = 1.0  // Ensure progress shows complete
                     self?.stopProgressTimer()
+                    self?.ttsAudioMonitor.stopMonitoring()  // Stop TTS audio monitoring
                     self?.completionHandler?()
                     
                     // Clean up temp file
@@ -457,6 +472,7 @@ class PiperTTSEngine: NSObject, ObservableObject {
         completionHandler = nil
         progress = 0.0
         stopProgressTimer()
+        ttsAudioMonitor.stopMonitoring()  // Stop TTS audio monitoring
         playbackStartTime = nil
         audioDuration = 0
     }
