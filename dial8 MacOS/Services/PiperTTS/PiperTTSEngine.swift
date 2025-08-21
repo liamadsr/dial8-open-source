@@ -182,13 +182,7 @@ class PiperTTSEngine: NSObject, ObservableObject {
             // Get the audio engine's output format
             let outputFormat = audioEngine.mainMixerNode.outputFormat(forBus: 0)
             
-            // Create a buffer in the correct format for the audio engine
-            guard let buffer = AVAudioPCMBuffer(pcmFormat: outputFormat,
-                                                frameCapacity: AVAudioFrameCount(audioFile.length)) else {
-                print("🎤 PiperTTS: Failed to create buffer with output format")
-                completionHandler?()
-                return
-            }
+            let buffer: AVAudioPCMBuffer
             
             // If formats don't match, we need to convert
             if audioFile.processingFormat != outputFormat {
@@ -210,23 +204,97 @@ class PiperTTSEngine: NSObject, ObservableObject {
                 
                 try audioFile.read(into: inputBuffer)
                 
-                // Convert the audio
-                let inputBlock: AVAudioConverterInputBlock = { inNumPackets, outStatus in
-                    outStatus.pointee = .haveData
-                    return inputBuffer
-                }
+                // Calculate output buffer size based on sample rate ratio
+                let inputSampleRate = audioFile.processingFormat.sampleRate
+                let outputSampleRate = outputFormat.sampleRate
+                let sampleRateRatio = outputSampleRate / inputSampleRate
+                let outputFrameCapacity = AVAudioFrameCount(Double(audioFile.length) * sampleRateRatio + 1000) // Add some buffer
                 
-                var error: NSError?
-                let status = converter.convert(to: buffer, error: &error, withInputFrom: inputBlock)
-                
-                if status == .error {
-                    print("🎤 PiperTTS: Conversion error: \(error?.localizedDescription ?? "unknown")")
+                // Create output buffer with proper size
+                guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: outputFormat,
+                                                          frameCapacity: outputFrameCapacity) else {
+                    print("🎤 PiperTTS: Failed to create output buffer")
                     completionHandler?()
                     return
                 }
+                
+                // Convert the audio in a loop to handle all data
+                var convertedFrameCount: AVAudioFrameCount = 0
+                var inputFramePosition: AVAudioFramePosition = 0
+                let inputFrameCount = inputBuffer.frameLength
+                
+                let inputBlock: AVAudioConverterInputBlock = { inNumPackets, outStatus in
+                    if inputFramePosition >= inputFrameCount {
+                        outStatus.pointee = .noDataNow
+                        return nil
+                    }
+                    
+                    // Calculate how many frames to provide
+                    let framesToProvide = min(inNumPackets, AVAudioPacketCount(inputFrameCount - AVAudioFrameCount(inputFramePosition)))
+                    
+                    // Create a sub-buffer view of the input
+                    guard let subBuffer = AVAudioPCMBuffer(pcmFormat: inputBuffer.format,
+                                                           frameCapacity: framesToProvide) else {
+                        outStatus.pointee = .noDataNow
+                        return nil
+                    }
+                    
+                    subBuffer.frameLength = framesToProvide
+                    
+                    // Copy the appropriate portion of input data
+                    if let inputInt16 = inputBuffer.int16ChannelData,
+                       let subInt16 = subBuffer.int16ChannelData {
+                        for channel in 0..<Int(inputBuffer.format.channelCount) {
+                            for frame in 0..<Int(framesToProvide) {
+                                subInt16[channel][frame] = inputInt16[channel][Int(inputFramePosition) + frame]
+                            }
+                        }
+                    } else if let inputFloat = inputBuffer.floatChannelData,
+                              let subFloat = subBuffer.floatChannelData {
+                        for channel in 0..<Int(inputBuffer.format.channelCount) {
+                            for frame in 0..<Int(framesToProvide) {
+                                subFloat[channel][frame] = inputFloat[channel][Int(inputFramePosition) + frame]
+                            }
+                        }
+                    }
+                    
+                    inputFramePosition += AVAudioFramePosition(framesToProvide)
+                    outStatus.pointee = .haveData
+                    return subBuffer
+                }
+                
+                // Keep converting until all input is processed
+                while true {
+                    var error: NSError?
+                    let status = converter.convert(to: outputBuffer, error: &error, withInputFrom: inputBlock)
+                    
+                    if status == .error {
+                        print("🎤 PiperTTS: Conversion error: \(error?.localizedDescription ?? "unknown")")
+                        completionHandler?()
+                        return
+                    }
+                    
+                    convertedFrameCount += outputBuffer.frameLength
+                    
+                    if status == .endOfStream || inputFramePosition >= inputFrameCount {
+                        break
+                    }
+                }
+                
+                outputBuffer.frameLength = convertedFrameCount
+                buffer = outputBuffer
+                print("🎤 PiperTTS: Converted \(inputFrameCount) frames to \(convertedFrameCount) frames")
+                
             } else {
                 // Formats match, just read directly
-                try audioFile.read(into: buffer)
+                guard let directBuffer = AVAudioPCMBuffer(pcmFormat: outputFormat,
+                                                          frameCapacity: AVAudioFrameCount(audioFile.length)) else {
+                    print("🎤 PiperTTS: Failed to create buffer")
+                    completionHandler?()
+                    return
+                }
+                try audioFile.read(into: directBuffer)
+                buffer = directBuffer
             }
             
             // Disconnect and reconnect with the proper format
