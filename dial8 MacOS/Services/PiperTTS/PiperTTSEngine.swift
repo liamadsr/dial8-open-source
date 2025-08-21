@@ -123,6 +123,10 @@ class PiperTTSEngine: NSObject, ObservableObject {
         
         print("🎤 PiperTTS: Generating speech with actual Piper TTS...")
         
+        // Set playing state immediately to prevent HUD from dismissing
+        isPlaying = true
+        isPaused = false
+        
         // Generate speech in background
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
@@ -131,6 +135,7 @@ class PiperTTSEngine: NSObject, ObservableObject {
             guard let (audioData, sampleRate) = piperCore.generateSpeech(text: text, speed: self.speechRate) else {
                 print("🎤 PiperTTS: Failed to generate speech, falling back to system")
                 DispatchQueue.main.async {
+                    self.isPlaying = false
                     self.speakWithSystem(text: text, completion: completion)
                 }
                 return
@@ -148,6 +153,8 @@ class PiperTTSEngine: NSObject, ObservableObject {
             } else {
                 print("🎤 PiperTTS: Failed to write audio file")
                 DispatchQueue.main.async {
+                    self.isPlaying = false
+                    self.isPaused = false
                     completion?()
                 }
             }
@@ -175,6 +182,8 @@ class PiperTTSEngine: NSObject, ObservableObject {
             audioFile = try AVAudioFile(forReading: url)
             
             guard let audioFile = audioFile else {
+                isPlaying = false
+                isPaused = false
                 completionHandler?()
                 return
             }
@@ -191,6 +200,8 @@ class PiperTTSEngine: NSObject, ObservableObject {
                 // Create a converter
                 guard let converter = AVAudioConverter(from: audioFile.processingFormat, to: outputFormat) else {
                     print("🎤 PiperTTS: Failed to create audio converter")
+                    isPlaying = false
+                    isPaused = false
                     completionHandler?()
                     return
                 }
@@ -198,6 +209,8 @@ class PiperTTSEngine: NSObject, ObservableObject {
                 // Read the original file into a buffer
                 guard let inputBuffer = AVAudioPCMBuffer(pcmFormat: audioFile.processingFormat,
                                                          frameCapacity: AVAudioFrameCount(audioFile.length)) else {
+                    isPlaying = false
+                    isPaused = false
                     completionHandler?()
                     return
                 }
@@ -214,6 +227,8 @@ class PiperTTSEngine: NSObject, ObservableObject {
                 guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: outputFormat,
                                                           frameCapacity: outputFrameCapacity) else {
                     print("🎤 PiperTTS: Failed to create output buffer")
+                    isPlaying = false
+                    isPaused = false
                     completionHandler?()
                     return
                 }
@@ -270,6 +285,8 @@ class PiperTTSEngine: NSObject, ObservableObject {
                     
                     if status == .error {
                         print("🎤 PiperTTS: Conversion error: \(error?.localizedDescription ?? "unknown")")
+                        isPlaying = false
+                        isPaused = false
                         completionHandler?()
                         return
                     }
@@ -290,6 +307,8 @@ class PiperTTSEngine: NSObject, ObservableObject {
                 guard let directBuffer = AVAudioPCMBuffer(pcmFormat: outputFormat,
                                                           frameCapacity: AVAudioFrameCount(audioFile.length)) else {
                     print("🎤 PiperTTS: Failed to create buffer")
+                    isPlaying = false
+                    isPaused = false
                     completionHandler?()
                     return
                 }
@@ -314,13 +333,14 @@ class PiperTTSEngine: NSObject, ObservableObject {
             
             // Start playback
             playerNode.play()
-            isPlaying = true
-            isPaused = false
+            // Note: isPlaying already set to true in speakWithPiper to prevent HUD dismissal
             
             print("🎤 PiperTTS: Playing Piper-generated audio (format: \(outputFormat))")
             
         } catch {
             print("🎤 PiperTTS: Failed to play audio: \(error)")
+            isPlaying = false
+            isPaused = false
             completionHandler?()
         }
     }

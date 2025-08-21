@@ -48,6 +48,7 @@ class TextToSpeechService: NSObject, ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var totalCharacters: Int = 0
     private var charactersSpoken: Int = 0
+    private var isStartingSpeech = false  // Flag to prevent false finish events
     
     // MARK: - Initialization
     private override init() {
@@ -66,8 +67,15 @@ class TextToSpeechService: NSObject, ObservableObject {
         // Observe PiperTTS state changes
         piperTTS.$isPlaying
             .sink { [weak self] isPlaying in
-                if !isPlaying && self?.state == .playing {
-                    self?.handleSpeechFinished()
+                guard let self = self else { return }
+                
+                // Don't trigger finish if we're just starting speech
+                if self.isStartingSpeech {
+                    return
+                }
+                
+                if !isPlaying && self.state == .playing {
+                    self.handleSpeechFinished()
                 }
             }
             .store(in: &cancellables)
@@ -79,6 +87,9 @@ class TextToSpeechService: NSObject, ObservableObject {
     
     func speak(text: String) {
         print("🔊 TextToSpeechService: Starting to speak text with \(text.count) characters")
+        
+        // Set flag to prevent false finish events during startup
+        isStartingSpeech = true
         
         // Stop any current speech
         stop()
@@ -102,6 +113,11 @@ class TextToSpeechService: NSObject, ObservableObject {
         // Start speaking with PiperTTS
         piperTTS.speak(text: text) { [weak self] in
             self?.handleSpeechFinished()
+        }
+        
+        // Clear the flag after a short delay to allow PiperTTS to set its state
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.isStartingSpeech = false
         }
     }
     
@@ -143,6 +159,7 @@ class TextToSpeechService: NSObject, ObservableObject {
         isSpeaking = false
         progress = 0.0
         charactersSpoken = 0
+        isStartingSpeech = false  // Clear flag in case it was set
         
         // Post notification that TTS stopped
         NotificationCenter.default.post(name: Notification.Name("TTSDidStop"), object: nil)
