@@ -92,10 +92,10 @@ class HUDAnimationState: ObservableObject {
     func animateIn() {
         // Start with folded state
         foldProgress = 0
-        scaleY = 0.01
+        scaleY = 0.1  // Increased from 0.01 to avoid singular matrix
         opacity = 0
-        rotationAngle = -90
-        perspectiveAmount = 1
+        rotationAngle = -60  // Reduced from -90 to avoid extreme transformation
+        perspectiveAmount = 0.5  // Reduced from 1 for smoother animation
         isVisible = true
         
         // Play open sound effect
@@ -115,12 +115,12 @@ class HUDAnimationState: ObservableObject {
         // Play close sound effect
         HUDSoundEffects.shared.playCloseSound()
         
-        // Animate to folded state with even faster, tighter fold
+        // Animate to folded state with safer values
         withAnimation(.interpolatingSpring(stiffness: 700, damping: 45)) {
             foldProgress = 0
-            scaleY = 0.001  // Even thinner
-            rotationAngle = -88  // Almost completely edge-on
-            perspectiveAmount = 1.5  // More dramatic perspective
+            scaleY = 0.1  // Increased from 0.001 to avoid singular matrix
+            rotationAngle = -60  // Reduced from -88 to avoid extreme transformation
+            perspectiveAmount = 0.5  // Reduced from 1.5 for smoother animation
         }
         
         // Fade out very quickly while folding

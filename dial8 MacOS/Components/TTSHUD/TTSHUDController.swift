@@ -24,16 +24,16 @@ class TTSHUDWindow: NSPanel {
         self.isMovableByWindowBackground = false
     }
     
-    // Allow window to become key to receive key events
-    override var canBecomeKey: Bool { true }
+    // Don't allow window to become key - this prevents interference with copy/paste
+    override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 }
 
 class TTSHUDController: NSWindowController {
     private let animationDuration: TimeInterval = 0.3
     private var isAnimating = false
-    private var globalKeyMonitor: Any?
-    private var localKeyMonitor: Any?
+    private var eventTap: CFMachPort?
+    private var runLoopSource: CFRunLoopSource?
     private var hasStartedPlaying = false
     
     init() {
@@ -60,48 +60,66 @@ class TTSHUDController: NSWindowController {
     }
     
     private func setupKeyEventMonitor() {
-        // Use global monitor to capture space key before it reaches other apps
-        globalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self = self else { return }
-            
-            // Check if space key was pressed (keyCode 49) and window is visible
-            if event.keyCode == 49 && !self.hasStartedPlaying && self.window?.isVisible == true {
-                self.hasStartedPlaying = true
-                
-                // Start TTS if we have text
-                if let text = TextToSpeechService.shared.currentText {
-                    print("🔊 TTSHUDController: Starting TTS playback via space key")
-                    TextToSpeechService.shared.speak(text: text)
-                }
-            }
-        }
+        // Create event tap callback
+        let eventMask = (1 << CGEventType.keyDown.rawValue)
         
-        // Also add local monitor to consume the space key event
-        localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self = self else { return event }
+        // Define the callback function
+        let callback: CGEventTapCallBack = { (proxy, type, event, refcon) in
+            // Get the controller instance from refcon
+            let controller = Unmanaged<TTSHUDController>.fromOpaque(refcon!).takeUnretainedValue()
             
-            // Only process if window is visible and key window
-            guard let window = self.window,
-                  window.isVisible && window.isKeyWindow else {
-                return event
-            }
-            
-            // Consume space key if we haven't started playing
-            if event.keyCode == 49 {
-                if !self.hasStartedPlaying {
-                    self.hasStartedPlaying = true
+            // Check if it's a key down event
+            if type == .keyDown {
+                let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+                let flags = event.flags
+                
+                // Check if space key (49) without modifiers
+                if keyCode == 49 &&
+                   !flags.contains(.maskCommand) &&
+                   !flags.contains(.maskAlternate) &&
+                   !flags.contains(.maskControl) &&
+                   controller.window?.isVisible == true {
                     
-                    // Start TTS if we have text
-                    if let text = TextToSpeechService.shared.currentText {
-                        print("🔊 TTSHUDController: Starting TTS playback via space key (local)")
-                        TextToSpeechService.shared.speak(text: text)
+                    // If we haven't started playing yet, consume this space press
+                    if !controller.hasStartedPlaying {
+                        controller.hasStartedPlaying = true
+                        
+                        // Start TTS on main thread
+                        DispatchQueue.main.async {
+                            if let text = TextToSpeechService.shared.currentText {
+                                print("🔊 TTSHUDController: Starting TTS playback via space key (consuming event)")
+                                TextToSpeechService.shared.speak(text: text)
+                            }
+                        }
+                        
+                        // Consume the event by returning nil
+                        return nil
                     }
                 }
-                // Consume the event to prevent it from reaching other apps
-                return nil
             }
             
-            return event
+            // Pass through all other events
+            return Unmanaged.passUnretained(event)
+        }
+        
+        // Create the event tap
+        eventTap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .defaultTap,
+            eventsOfInterest: CGEventMask(eventMask),
+            callback: callback,
+            userInfo: Unmanaged.passUnretained(self).toOpaque()
+        )
+        
+        // Add to run loop if tap was created successfully
+        if let eventTap = eventTap {
+            runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0)
+            CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
+            CGEvent.tapEnable(tap: eventTap, enable: true)
+            print("🔊 TTSHUDController: Event tap installed successfully")
+        } else {
+            print("🔊 TTSHUDController: Failed to create event tap - may need accessibility permissions")
         }
     }
     
@@ -136,7 +154,7 @@ class TTSHUDController: NSWindowController {
         // Start with window invisible to ensure animation controls visibility
         window.alphaValue = 0
         window.orderFrontRegardless()
-        window.makeKey()  // Make window key to receive key events
+        // Don't make window key - this prevents interference with copy/paste
         
         // Small delay to ensure window is ready before triggering animation
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
@@ -154,13 +172,13 @@ class TTSHUDController: NSWindowController {
         // Reset the playing flag so space key works for new selection
         hasStartedPlaying = false
         
-        // Make sure window is visible and key to receive events
+        // Make sure window is visible but don't make it key
         if let window = self.window {
             // Ensure window stays visible
             if !window.isVisible {
                 window.orderFrontRegardless()
             }
-            window.makeKey()
+            // Don't make window key - this prevents interference with copy/paste
             
             // Force the SwiftUI view to update by triggering a small UI refresh
             if let hostingView = window.contentView as? NSHostingView<TTSHUDView> {
@@ -187,11 +205,6 @@ class TTSHUDController: NSWindowController {
         // This prevents the "not allowed" sound when dismissing
         cleanupKeyMonitors()
         
-        // Resign key window status to prevent key event issues
-        if window.isKeyWindow {
-            window.resignKey()
-        }
-        
         // Trigger the folding close animation
         NotificationCenter.default.post(name: Notification.Name("TTSHUDShouldAnimateOut"), object: nil)
         
@@ -208,13 +221,16 @@ class TTSHUDController: NSWindowController {
     }
     
     private func cleanupKeyMonitors() {
-        if let monitor = globalKeyMonitor {
-            NSEvent.removeMonitor(monitor)
-            globalKeyMonitor = nil
+        // Disable and remove event tap
+        if let eventTap = eventTap {
+            CGEvent.tapEnable(tap: eventTap, enable: false)
+            self.eventTap = nil
         }
-        if let monitor = localKeyMonitor {
-            NSEvent.removeMonitor(monitor)
-            localKeyMonitor = nil
+        
+        // Remove from run loop
+        if let runLoopSource = runLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
+            self.runLoopSource = nil
         }
     }
     

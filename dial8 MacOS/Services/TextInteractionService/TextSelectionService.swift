@@ -483,6 +483,13 @@ class TextSelectionService {
     private func tryGetSelectedTextViaClipboard() -> String? {
         print("📝 TextSelectionService: Attempting to get selected text via clipboard")
         
+        // Check if any modifier keys are currently pressed - if so, skip to avoid interference
+        let currentModifiers = NSEvent.modifierFlags
+        if currentModifiers.contains(.command) || currentModifiers.contains(.control) {
+            print("📝 TextSelectionService: Modifier keys detected, skipping clipboard check to avoid interference")
+            return nil
+        }
+        
         // Store the current clipboard content
         let pasteboard = NSPasteboard.general
         let oldClipboardContent = pasteboard.string(forType: .string)
@@ -501,9 +508,9 @@ class TextSelectionService {
             }
         }
         
-        // Add a small delay to ensure the OS has time to update the selection
+        // Add a minimal delay to ensure the OS has time to update the selection
         // This helps prevent a race condition when quickly switching between apps
-        usleep(20000) // 20ms delay before sending CMD+C
+        usleep(10000) // 10ms delay before sending CMD+C
         
         // Using a more direct approach to avoid delays
         // Send CMD+C keystroke with minimal delays
@@ -520,12 +527,12 @@ class TextSelectionService {
         
         // Post events
         keyDown?.post(tap: .cghidEventTap)
-        // Only tiny delay between down and up
+        // Tiny delay between down and up
         usleep(5000) // 5ms
         keyUp?.post(tap: .cghidEventTap)
         
-        // Increase the wait time for clipboard to ensure it captures the new content
-        usleep(100000) // 100ms (increased from 50ms)
+        // Wait for clipboard to capture the new content
+        usleep(50000) // 50ms
         
         // Check clipboard
         let newClipboardContent = pasteboard.string(forType: .string)
@@ -537,7 +544,7 @@ class TextSelectionService {
            (oldClipboardContent == nil || newContent != oldClipboardContent) {
             print("📝 TextSelectionService: Found new clipboard content")
             // Restore original clipboard content asynchronously
-            // Increase the delay to give more time before restoring
+            // Quick restore for snappy experience
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 restoreClipboard()
             }
@@ -545,7 +552,7 @@ class TextSelectionService {
         }
         
         print("📝 TextSelectionService: No new clipboard content found")
-        // Restore original clipboard content
+        // Restore original clipboard content immediately since we didn't find anything
         restoreClipboard()
         return nil
     }

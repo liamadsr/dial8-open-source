@@ -78,21 +78,37 @@ class HUDSoundEffects: ObservableObject {
     
     func playOpenSound() {
         guard soundsEnabled else { return }
+        // Stop if already playing to avoid error
+        if openSound?.isPlaying == true {
+            openSound?.stop()
+        }
         openSound?.play()
     }
     
     func playReadySound() {
         guard soundsEnabled else { return }
+        // Stop if already playing to avoid error
+        if readySound?.isPlaying == true {
+            readySound?.stop()
+        }
         readySound?.play()
     }
     
     func playCloseSound() {
         guard soundsEnabled else { return }
+        // Stop if already playing to avoid error
+        if closeSound?.isPlaying == true {
+            closeSound?.stop()
+        }
         closeSound?.play()
     }
     
     func playProcessingSound() {
         guard soundsEnabled else { return }
+        // Stop if already playing to avoid error
+        if processingSound?.isPlaying == true {
+            processingSound?.stop()
+        }
         processingSound?.play()
     }
     

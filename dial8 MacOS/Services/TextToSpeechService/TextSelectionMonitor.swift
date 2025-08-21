@@ -14,11 +14,15 @@ class TextSelectionMonitor: ObservableObject {
     private var eventMonitor: Any?
     private var lastSelectedText: String?
     private var selectionCheckTimer: Timer?
-    private let selectionCheckDelay: TimeInterval = 0.05 // Wait only 50ms after mouse up to check selection
+    private let selectionCheckDelay: TimeInterval = 0.05 // Quick response for snappy feel
     private var hudController: TTSHUDController?
     private var isCheckingSelection = false
     private var isSwitchingText = false // Flag to prevent auto-dismiss when switching text
     private var lastHUDActionTime: Date = Date.distantPast // Track last HUD show/hide to prevent rapid changes
+    private var mouseDownLocation: NSPoint? // Track where mouse was pressed down
+    private var isDragging = false // Track if user is dragging to select text
+    private var lastClickTime: Date = Date.distantPast // Track time of last click for double-click detection
+    private var clickCount = 0 // Track click count for double/triple click
     
     // MARK: - Initialization
     private init() {
@@ -34,8 +38,8 @@ class TextSelectionMonitor: ObservableObject {
         isMonitoring = true
         
         // Monitor mouse events to detect when user might be selecting text
-        // Only monitor left mouse up (not right click to avoid interfering with context menus)
-        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseUp]) { [weak self] event in
+        // Monitor mouse down, dragged, and up to detect selection gestures
+        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp]) { [weak self] event in
             self?.handleMouseEvent(event)
         }
     }
@@ -82,9 +86,64 @@ class TextSelectionMonitor: ObservableObject {
     
     private func handleMouseEvent(_ event: NSEvent) {
         switch event.type {
+        case .leftMouseDown:
+            // Record where the mouse was pressed down
+            mouseDownLocation = event.locationInWindow
+            isDragging = false
+            
+            // Track clicks for double/triple click detection
+            let now = Date()
+            let timeSinceLastClick = now.timeIntervalSince(lastClickTime)
+            
+            // Reset click count if too much time has passed (> 0.5 seconds)
+            if timeSinceLastClick > 0.5 {
+                clickCount = 1
+            } else {
+                clickCount += 1
+            }
+            lastClickTime = now
+            
+        case .leftMouseDragged:
+            // User is dragging - likely selecting text
+            if mouseDownLocation != nil {
+                let dragDistance = abs(event.locationInWindow.x - mouseDownLocation!.x) + 
+                                  abs(event.locationInWindow.y - mouseDownLocation!.y)
+                // Only consider it a drag if mouse moved more than 5 pixels
+                if dragDistance > 5 {
+                    isDragging = true
+                }
+            }
+            
         case .leftMouseUp:
-            // User released mouse - might have selected text
-            scheduleSelectionCheck()
+            // Check if CMD key is being held (user is likely copying)
+            if event.modifierFlags.contains(.command) {
+                print("📋 TextSelectionMonitor: CMD key held, skipping selection check (user likely copying)")
+                mouseDownLocation = nil
+                isDragging = false
+                return
+            }
+            
+            // Only check for selection if:
+            // - User was dragging (selecting text)
+            // - Shift key is held (extending selection)  
+            // - Double/triple click (word/line selection)
+            if isDragging || event.modifierFlags.contains(.shift) || clickCount >= 2 {
+                if isDragging {
+                    print("📋 TextSelectionMonitor: Detected drag selection")
+                } else if clickCount >= 2 {
+                    print("📋 TextSelectionMonitor: Detected double/triple click selection")
+                } else {
+                    print("📋 TextSelectionMonitor: Detected shift-click selection")
+                }
+                scheduleSelectionCheck()
+            } else {
+                print("📋 TextSelectionMonitor: Single click detected, not checking for selection")
+            }
+            
+            // Reset tracking variables
+            mouseDownLocation = nil
+            isDragging = false
+            
         default:
             break
         }
@@ -97,7 +156,7 @@ class TextSelectionMonitor: ObservableObject {
         // Don't check if already checking
         guard !isCheckingSelection else { return }
         
-        // Check immediately for faster response
+        // Check immediately for snappy response
         checkForSelectedText()
     }
     
