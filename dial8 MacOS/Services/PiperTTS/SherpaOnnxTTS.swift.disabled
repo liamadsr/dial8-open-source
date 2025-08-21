@@ -1,0 +1,254 @@
+import Foundation
+
+// MARK: - C API Imports
+// These need to be exposed through the bridging header
+@_silgen_name("SherpaOnnxCreateOfflineTts")
+func SherpaOnnxCreateOfflineTts(_ config: UnsafePointer<SherpaOnnxOfflineTtsConfig>) -> OpaquePointer?
+
+@_silgen_name("SherpaOnnxDestroyOfflineTts")
+func SherpaOnnxDestroyOfflineTts(_ tts: OpaquePointer)
+
+@_silgen_name("SherpaOnnxOfflineTtsGenerate")
+func SherpaOnnxOfflineTtsGenerate(_ tts: OpaquePointer?, _ text: UnsafePointer<CChar>?, _ sid: Int32, _ speed: Float) -> OpaquePointer?
+
+@_silgen_name("SherpaOnnxOfflineTtsGenerateToFile")
+func SherpaOnnxOfflineTtsGenerateToFile(_ tts: OpaquePointer?, _ text: UnsafePointer<CChar>?, _ sid: Int32, _ speed: Float, _ filename: UnsafePointer<CChar>?) -> Int32
+
+@_silgen_name("SherpaOnnxDestroyOfflineTtsGeneratedAudio")
+func SherpaOnnxDestroyOfflineTtsGeneratedAudio(_ audio: OpaquePointer)
+
+@_silgen_name("SherpaOnnxOfflineTtsGeneratedAudioGetSampleRate")
+func SherpaOnnxOfflineTtsGeneratedAudioGetSampleRate(_ audio: OpaquePointer?) -> Int32
+
+@_silgen_name("SherpaOnnxOfflineTtsGeneratedAudioGetNumSamples")
+func SherpaOnnxOfflineTtsGeneratedAudioGetNumSamples(_ audio: OpaquePointer?) -> Int32
+
+@_silgen_name("SherpaOnnxOfflineTtsGeneratedAudioGetSamples")
+func SherpaOnnxOfflineTtsGeneratedAudioGetSamples(_ audio: OpaquePointer?) -> UnsafePointer<Float>?
+
+@_silgen_name("SherpaOnnxOfflineTtsNumSpeakers")
+func SherpaOnnxOfflineTtsNumSpeakers(_ tts: OpaquePointer?) -> Int32
+
+/// Swift wrapper for Sherpa-ONNX TTS functionality
+class SherpaOnnxTTS {
+    private var tts: OpaquePointer?
+    private var config: SherpaOnnxOfflineTtsConfig
+    
+    /// Available Piper voice models
+    enum PiperVoice: String, CaseIterable {
+        case amyLow = "en_US-amy-low"
+        case amyMedium = "en_US-amy-medium"
+        case ryanHigh = "en_US-ryan-high"
+        case dannyLow = "en_US-danny-low"
+        case kathleenLow = "en_US-kathleen-low"
+        case librittsHigh = "en_US-libritts_r-medium"
+        
+        var displayName: String {
+            switch self {
+            case .amyLow: return "Amy (Low Quality)"
+            case .amyMedium: return "Amy (Medium Quality)"
+            case .ryanHigh: return "Ryan (High Quality)"
+            case .dannyLow: return "Danny (Low Quality)"
+            case .kathleenLow: return "Kathleen (Low Quality)"
+            case .librittsHigh: return "LibriTTS (High Quality)"
+            }
+        }
+        
+        var modelPath: String {
+            let resourcePath = Bundle.main.resourcePath ?? ""
+            return "\(resourcePath)/PiperModels/\(rawValue)/\(rawValue).onnx"
+        }
+        
+        var tokensPath: String {
+            let resourcePath = Bundle.main.resourcePath ?? ""
+            return "\(resourcePath)/PiperModels/\(rawValue)/tokens.txt"
+        }
+        
+        var espeakDataPath: String {
+            let resourcePath = Bundle.main.resourcePath ?? ""
+            return "\(resourcePath)/PiperModels/espeak-ng-data"
+        }
+    }
+    
+    /// Initialize with a specific Piper voice
+    init(voice: PiperVoice = .amyLow) throws {
+        // Create VITS model config for Piper
+        var vitsConfig = sherpaOnnxOfflineTtsVitsModelConfig(
+            model: strdup(voice.modelPath),
+            lexicon: nil,
+            tokens: strdup(voice.tokensPath),
+            dataDir: strdup(voice.espeakDataPath),
+            noiseScale: 0.667,
+            noiseScaleW: 0.8,
+            lengthScale: 1.0,
+            dictDir: nil
+        )
+        
+        // Create model config
+        var modelConfig = sherpaOnnxOfflineTtsModelConfig(
+            vits: vitsConfig,
+            numThreads: 2,
+            debug: 0,
+            provider: strdup("cpu")
+        )
+        
+        // Create main TTS config
+        config = SherpaOnnxOfflineTtsConfig(
+            model: modelConfig,
+            ruleFsts: nil,
+            ruleFars: nil,
+            maxNumSentences: 2
+        )
+        
+        // Create TTS instance
+        tts = SherpaOnnxCreateOfflineTts(&config)
+        
+        guard tts != nil else {
+            throw TTSError.initializationFailed
+        }
+    }
+    
+    deinit {
+        if let tts = tts {
+            SherpaOnnxDestroyOfflineTts(tts)
+        }
+        
+        // Free allocated strings
+        if let model = config.model.vits.model {
+            free(UnsafeMutablePointer(mutating: model))
+        }
+        if let tokens = config.model.vits.tokens {
+            free(UnsafeMutablePointer(mutating: tokens))
+        }
+        if let dataDir = config.model.vits.dataDir {
+            free(UnsafeMutablePointer(mutating: dataDir))
+        }
+        if let provider = config.model.provider {
+            free(UnsafeMutablePointer(mutating: provider))
+        }
+    }
+    
+    /// Generate speech from text
+    func generateSpeech(text: String, speakerId: Int32 = 0, speed: Float = 1.0) -> Data? {
+        guard let tts = tts else { return nil }
+        
+        let cText = strdup(text)
+        defer { free(cText) }
+        
+        // Generate audio with TTS
+        let audio = SherpaOnnxOfflineTtsGenerate(tts, cText, speakerId, speed)
+        
+        guard let audio = audio else { return nil }
+        defer { SherpaOnnxDestroyOfflineTtsGeneratedAudio(audio) }
+        
+        // Get sample rate and samples
+        let sampleRate = SherpaOnnxOfflineTtsGeneratedAudioGetSampleRate(audio)
+        let numSamples = SherpaOnnxOfflineTtsGeneratedAudioGetNumSamples(audio)
+        let samples = SherpaOnnxOfflineTtsGeneratedAudioGetSamples(audio)
+        
+        guard numSamples > 0, let samples = samples else { return nil }
+        
+        // Convert float samples to PCM16 for playback
+        var pcm16Data = Data()
+        for i in 0..<numSamples {
+            let sample = samples[Int(i)]
+            let pcm16Sample = Int16(max(-32768, min(32767, sample * 32767)))
+            withUnsafeBytes(of: pcm16Sample) { pcm16Data.append(contentsOf: $0) }
+        }
+        
+        return pcm16Data
+    }
+    
+    /// Generate speech and save to file
+    func generateSpeechToFile(text: String, outputPath: String, speakerId: Int32 = 0, speed: Float = 1.0) -> Bool {
+        guard let tts = tts else { return false }
+        
+        let cText = strdup(text)
+        let cOutputPath = strdup(outputPath)
+        defer {
+            free(cText)
+            free(cOutputPath)
+        }
+        
+        // Generate and save to file
+        let result = SherpaOnnxOfflineTtsGenerateToFile(tts, cText, speakerId, speed, cOutputPath)
+        return result == 1
+    }
+    
+    /// Get available speaker IDs for multi-speaker models
+    func getAvailableSpeakers() -> Int32 {
+        guard let tts = tts else { return 0 }
+        return SherpaOnnxOfflineTtsNumSpeakers(tts)
+    }
+    
+    enum TTSError: Error {
+        case initializationFailed
+        case generationFailed
+        case invalidVoice
+    }
+}
+
+// MARK: - C API Bridge Functions (will be defined in bridging header)
+// These function declarations should match the Sherpa-ONNX C API
+
+struct SherpaOnnxOfflineTtsVitsModelConfig {
+    var model: UnsafePointer<CChar>?
+    var lexicon: UnsafePointer<CChar>?
+    var tokens: UnsafePointer<CChar>?
+    var dataDir: UnsafePointer<CChar>?
+    var noiseScale: Float
+    var noiseScaleW: Float
+    var lengthScale: Float
+    var dictDir: UnsafePointer<CChar>?
+}
+
+struct SherpaOnnxOfflineTtsModelConfig {
+    var vits: SherpaOnnxOfflineTtsVitsModelConfig
+    var numThreads: Int32
+    var debug: Int32
+    var provider: UnsafePointer<CChar>?
+}
+
+struct SherpaOnnxOfflineTtsConfig {
+    var model: SherpaOnnxOfflineTtsModelConfig
+    var ruleFsts: UnsafePointer<CChar>?
+    var ruleFars: UnsafePointer<CChar>?
+    var maxNumSentences: Int32
+}
+
+// Function signatures (actual implementation will come from C++ library)
+func sherpaOnnxOfflineTtsVitsModelConfig(
+    model: UnsafePointer<CChar>?,
+    lexicon: UnsafePointer<CChar>?,
+    tokens: UnsafePointer<CChar>?,
+    dataDir: UnsafePointer<CChar>?,
+    noiseScale: Float = 0.667,
+    noiseScaleW: Float = 0.8,
+    lengthScale: Float = 1.0,
+    dictDir: UnsafePointer<CChar>? = nil
+) -> SherpaOnnxOfflineTtsVitsModelConfig {
+    return SherpaOnnxOfflineTtsVitsModelConfig(
+        model: model,
+        lexicon: lexicon,
+        tokens: tokens,
+        dataDir: dataDir,
+        noiseScale: noiseScale,
+        noiseScaleW: noiseScaleW,
+        lengthScale: lengthScale,
+        dictDir: dictDir
+    )
+}
+
+func sherpaOnnxOfflineTtsModelConfig(
+    vits: SherpaOnnxOfflineTtsVitsModelConfig,
+    numThreads: Int32 = 2,
+    debug: Int32 = 0,
+    provider: UnsafePointer<CChar>? = nil
+) -> SherpaOnnxOfflineTtsModelConfig {
+    return SherpaOnnxOfflineTtsModelConfig(
+        vits: vits,
+        numThreads: numThreads,
+        debug: debug,
+        provider: provider
+    )
+}

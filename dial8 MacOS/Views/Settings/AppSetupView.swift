@@ -15,6 +15,8 @@ struct AppSetupView: View {
     @AppStorage("launchAtLogin") private var launchAtLogin = false
     @AppStorage("enableTranscriptionCleaning") private var enableTranscriptionCleaning = true
     @ObservedObject private var soundEffects = HUDSoundEffects.shared
+    @ObservedObject private var piperTTS = PiperTTSEngine.shared
+    @ObservedObject private var ttsService = TextToSpeechService.shared
     @Environment(\.colorScheme) private var colorScheme
     
     
@@ -117,6 +119,77 @@ struct AppSetupView: View {
                         title: "Enable Sound Effects",
                         isOn: $soundEffects.soundsEnabled
                     )
+                }
+                .padding(8)
+            }
+            
+            // TTS Settings Section
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    Image(systemName: "bubble.left.and.text.bubble.right")
+                        .font(.headline)
+                    Text("Text-to-Speech Settings")
+                        .font(.headline)
+                }
+                
+                Text("Configure voice and speed for text-to-speech playback.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                VStack(alignment: .leading, spacing: 16) {
+                    // Voice Selection
+                    HStack {
+                        Label("Voice", systemImage: "person.wave.2")
+                            .frame(width: 120, alignment: .leading)
+                        
+                        Picker("", selection: $piperTTS.currentVoice) {
+                            ForEach(PiperTTSEngine.PiperVoice.allCases, id: \.self) { voice in
+                                Text(voice.displayName)
+                                    .tag(voice)
+                            }
+                        }
+                        .pickerStyle(MenuPickerStyle())
+                        .frame(maxWidth: 200)
+                    }
+                    
+                    Divider()
+                    
+                    // Speed Selection
+                    HStack {
+                        Label("Speed", systemImage: "speedometer")
+                            .frame(width: 120, alignment: .leading)
+                        
+                        Picker("", selection: $ttsService.currentSpeed) {
+                            ForEach(TTSSpeed.allCases, id: \.self) { speed in
+                                Text(speed.displayName)
+                                    .tag(speed)
+                            }
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .frame(maxWidth: 300)
+                    }
+                    
+                    Divider()
+                    
+                    // Test TTS Button
+                    HStack {
+                        Button(action: {
+                            let testText = "Hello! This is a test of the Piper text-to-speech system with the \(piperTTS.currentVoice.displayName) voice at \(ttsService.currentSpeed.displayName) speed."
+                            ttsService.speak(text: testText)
+                        }) {
+                            Label("Test Voice", systemImage: "play.circle")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        
+                        if ttsService.state == .playing {
+                            Button(action: {
+                                ttsService.stop()
+                            }) {
+                                Label("Stop", systemImage: "stop.circle")
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
                 }
                 .padding(8)
             }

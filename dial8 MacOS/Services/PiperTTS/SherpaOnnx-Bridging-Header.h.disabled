@@ -1,0 +1,73 @@
+//
+//  SherpaOnnx-Bridging-Header.h
+//  dial8
+//
+//  Bridging header for Sherpa-ONNX C API
+//
+
+#ifndef SherpaOnnx_Bridging_Header_h
+#define SherpaOnnx_Bridging_Header_h
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// MARK: - Opaque pointer types
+typedef struct SherpaOnnxOfflineTts SherpaOnnxOfflineTts;
+typedef struct SherpaOnnxOfflineTtsGeneratedAudio SherpaOnnxOfflineTtsGeneratedAudio;
+
+// MARK: - TTS Functions
+
+// Create an offline TTS instance
+SherpaOnnxOfflineTts* SherpaOnnxCreateOfflineTts(const void* config);
+
+// Destroy an offline TTS instance
+void SherpaOnnxDestroyOfflineTts(SherpaOnnxOfflineTts* tts);
+
+// Generate audio from text
+SherpaOnnxOfflineTtsGeneratedAudio* SherpaOnnxOfflineTtsGenerate(
+    const SherpaOnnxOfflineTts* tts,
+    const char* text,
+    int32_t sid,  // speaker id
+    float speed
+);
+
+// Generate audio from text and save to file
+int32_t SherpaOnnxOfflineTtsGenerateToFile(
+    const SherpaOnnxOfflineTts* tts,
+    const char* text,
+    int32_t sid,
+    float speed,
+    const char* filename
+);
+
+// Get number of speakers
+int32_t SherpaOnnxOfflineTtsNumSpeakers(const SherpaOnnxOfflineTts* tts);
+
+// MARK: - Generated Audio Functions
+
+// Get sample rate of generated audio
+int32_t SherpaOnnxOfflineTtsGeneratedAudioGetSampleRate(
+    const SherpaOnnxOfflineTtsGeneratedAudio* audio
+);
+
+// Get number of samples
+int32_t SherpaOnnxOfflineTtsGeneratedAudioGetNumSamples(
+    const SherpaOnnxOfflineTtsGeneratedAudio* audio
+);
+
+// Get audio samples
+const float* SherpaOnnxOfflineTtsGeneratedAudioGetSamples(
+    const SherpaOnnxOfflineTtsGeneratedAudio* audio
+);
+
+// Destroy generated audio
+void SherpaOnnxDestroyOfflineTtsGeneratedAudio(
+    SherpaOnnxOfflineTtsGeneratedAudio* audio
+);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* SherpaOnnx_Bridging_Header_h */

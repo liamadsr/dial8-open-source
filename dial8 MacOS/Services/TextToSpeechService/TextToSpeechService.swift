@@ -44,16 +44,14 @@ class TextToSpeechService: NSObject, ObservableObject {
     @Published private(set) var progress: Float = 0.0
     
     // MARK: - Private Properties
-    private let synthesizer = AVSpeechSynthesizer()
-    private var currentUtterance: AVSpeechUtterance?
-    private var pausedRange: NSRange?
+    private let piperTTS = PiperTTSEngine.shared
+    private var cancellables = Set<AnyCancellable>()
     private var totalCharacters: Int = 0
     private var charactersSpoken: Int = 0
     
     // MARK: - Initialization
     private override init() {
         super.init()
-        synthesizer.delegate = self
         
         // Load saved speed preference
         if let savedSpeed = UserDefaults.standard.object(forKey: "TTSSpeed") as? Float,
@@ -62,7 +60,19 @@ class TextToSpeechService: NSObject, ObservableObject {
             print("🔊 TextToSpeechService: Loaded saved speed: \(speed.displayName)")
         }
         
-        print("🔊 TextToSpeechService: Initialized")
+        // Sync speed with PiperTTS
+        piperTTS.speechRate = currentSpeed.rawValue
+        
+        // Observe PiperTTS state changes
+        piperTTS.$isPlaying
+            .sink { [weak self] isPlaying in
+                if !isPlaying && self?.state == .playing {
+                    self?.handleSpeechFinished()
+                }
+            }
+            .store(in: &cancellables)
+        
+        print("🔊 TextToSpeechService: Initialized with Piper TTS")
     }
     
     // MARK: - Public Methods
@@ -79,36 +89,27 @@ class TextToSpeechService: NSObject, ObservableObject {
         charactersSpoken = 0
         progress = 0.0
         
-        // Create utterance
-        let utterance = AVSpeechUtterance(string: text)
-        utterance.rate = currentSpeed.rawValue * AVSpeechUtteranceDefaultSpeechRate
-        utterance.pitchMultiplier = 1.0
-        utterance.volume = 1.0
-        
-        // Use the default system voice
-        if let voice = AVSpeechSynthesisVoice(language: "en-US") {
-            utterance.voice = voice
-        }
-        
-        currentUtterance = utterance
-        
         // Play sound effect when starting TTS (using ready sound)
         HUDSoundEffects.shared.playReadySound()
         
-        // Start speaking
-        synthesizer.speak(utterance)
+        // Update state
         state = .playing
         isSpeaking = true
         
         // Post notification that TTS started
         NotificationCenter.default.post(name: Notification.Name("TTSDidStart"), object: nil)
+        
+        // Start speaking with PiperTTS
+        piperTTS.speak(text: text) { [weak self] in
+            self?.handleSpeechFinished()
+        }
     }
     
     func pause() {
         guard state == .playing else { return }
         
         print("🔊 TextToSpeechService: Pausing speech")
-        synthesizer.pauseSpeaking(at: .immediate)
+        piperTTS.pause()
         state = .paused
     }
     
@@ -116,7 +117,7 @@ class TextToSpeechService: NSObject, ObservableObject {
         guard state == .paused else { return }
         
         print("🔊 TextToSpeechService: Resuming speech")
-        synthesizer.continueSpeaking()
+        piperTTS.resume()
         state = .playing
     }
     
@@ -137,10 +138,9 @@ class TextToSpeechService: NSObject, ObservableObject {
         guard state != .idle else { return }
         
         print("🔊 TextToSpeechService: Stopping speech")
-        synthesizer.stopSpeaking(at: .immediate)
+        piperTTS.stop()
         state = .idle  // Set to idle instead of stopped so UI shows correct state
         isSpeaking = false
-        currentUtterance = nil
         progress = 0.0
         charactersSpoken = 0
         
@@ -155,7 +155,8 @@ class TextToSpeechService: NSObject, ObservableObject {
     // MARK: - Private Methods
     
     private func updateSpeechRate() {
-        guard let utterance = currentUtterance else { return }
+        // Update PiperTTS speech rate
+        piperTTS.speechRate = currentSpeed.rawValue
         
         // If currently speaking, we need to restart with new rate
         if state == .playing || state == .paused {
@@ -163,28 +164,18 @@ class TextToSpeechService: NSObject, ObservableObject {
             let currentPosition = charactersSpoken
             
             // Stop current speech
-            synthesizer.stopSpeaking(at: .immediate)
+            piperTTS.stop()
             
             // Get remaining text
             if let text = currentText {
                 let startIndex = text.index(text.startIndex, offsetBy: currentPosition, limitedBy: text.endIndex) ?? text.startIndex
                 let remainingText = String(text[startIndex...])
                 
-                // Create new utterance with remaining text
-                let newUtterance = AVSpeechUtterance(string: remainingText)
-                newUtterance.rate = currentSpeed.rawValue * AVSpeechUtteranceDefaultSpeechRate
-                newUtterance.pitchMultiplier = 1.0
-                newUtterance.volume = 1.0
-                
-                if let voice = AVSpeechSynthesisVoice(language: "en-US") {
-                    newUtterance.voice = voice
-                }
-                
-                currentUtterance = newUtterance
-                
                 // Resume if was playing
                 if wasPlaying {
-                    synthesizer.speak(newUtterance)
+                    piperTTS.speak(text: remainingText) { [weak self] in
+                        self?.handleSpeechFinished()
+                    }
                     state = .playing
                 }
             }
@@ -197,46 +188,16 @@ class TextToSpeechService: NSObject, ObservableObject {
             progress = Float(charactersSpoken) / Float(totalCharacters)
         }
     }
-}
-
-// MARK: - AVSpeechSynthesizerDelegate
-
-extension TextToSpeechService: AVSpeechSynthesizerDelegate {
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
-        print("🔊 TextToSpeechService: Speech started")
-        state = .playing
-        isSpeaking = true
-    }
     
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+    private func handleSpeechFinished() {
         print("🔊 TextToSpeechService: Speech finished")
         state = .idle
         isSpeaking = false
-        currentUtterance = nil
         progress = 1.0
         
         // Post notification
         NotificationCenter.default.post(name: Notification.Name("TTSDidFinish"), object: nil)
     }
-    
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didPause utterance: AVSpeechUtterance) {
-        print("🔊 TextToSpeechService: Speech paused")
-        state = .paused
-    }
-    
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didContinue utterance: AVSpeechUtterance) {
-        print("🔊 TextToSpeechService: Speech resumed")
-        state = .playing
-    }
-    
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
-        print("🔊 TextToSpeechService: Speech cancelled")
-        state = .stopped
-        isSpeaking = false
-        currentUtterance = nil
-    }
-    
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
-        updateProgress(range: characterRange)
-    }
 }
+
+// Note: AVSpeechSynthesizerDelegate has been removed as we're now using PiperTTS
