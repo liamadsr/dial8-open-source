@@ -1,15 +1,17 @@
 import Foundation
 import AVFoundation
 
-/// Simplified Piper TTS Engine using system TTS as fallback
-/// This will be replaced with actual Piper implementation once framework is properly integrated
+/// Piper TTS Engine using actual Piper voices via Sherpa-ONNX
 class PiperTTSEngine: NSObject, ObservableObject {
-    static let shared = PiperTTSEngine()
+    static let shared: PiperTTSEngine = {
+        let instance = PiperTTSEngine()
+        return instance
+    }()
     
     // MARK: - Published Properties
     @Published var isPlaying = false
     @Published var isPaused = false
-    @Published var currentVoice: PiperVoice = .amyLow {
+    @Published var currentVoice: PiperVoice = .amy {
         didSet {
             UserDefaults.standard.set(currentVoice.rawValue, forKey: "PiperTTSVoice")
         }
@@ -22,38 +24,25 @@ class PiperTTSEngine: NSObject, ObservableObject {
     
     // MARK: - Voice Options
     enum PiperVoice: String, CaseIterable {
-        case amyLow = "en_US-amy-low"
-        case amyMedium = "en_US-amy-medium"
-        case ryanHigh = "en_US-ryan-high"
-        case dannyLow = "en_US-danny-low"
-        case kathleenLow = "en_US-kathleen-low"
-        case librittsHigh = "en_US-libritts_r-medium"
+        case amy = "en_US-amy"
+        case systemFallback = "system-default"
         
         var displayName: String {
             switch self {
-            case .amyLow: return "Amy (Natural)"
-            case .amyMedium: return "Amy (High Quality)"
-            case .ryanHigh: return "Ryan (Male)"
-            case .dannyLow: return "Danny (Male)"
-            case .kathleenLow: return "Kathleen (Female)"
-            case .librittsHigh: return "LibriTTS (Premium)"
-            }
-        }
-        
-        // Map to system voices for fallback
-        var systemVoiceName: String? {
-            switch self {
-            case .amyLow, .amyMedium, .kathleenLow, .librittsHigh:
-                return "Samantha" // Female voice
-            case .ryanHigh, .dannyLow:
-                return "Alex" // Male voice
+            case .amy: return "Amy (Piper TTS)"
+            case .systemFallback: return "System Voice (Fallback)"
             }
         }
     }
     
     // MARK: - Private Properties
-    private let synthesizer = AVSpeechSynthesizer()
+    private var piperCore: PiperTTSCore?
+    private let synthesizer = AVSpeechSynthesizer()  // Fallback
     private var completionHandler: (() -> Void)?
+    private let audioEngine = AVAudioEngine()
+    private let playerNode = AVAudioPlayerNode()
+    private var audioFile: AVAudioFile?
+    private var isUsingPiper = false
     
     // MARK: - Initialization
     override init() {
@@ -70,7 +59,42 @@ class PiperTTSEngine: NSObject, ObservableObject {
         
         synthesizer.delegate = self
         
+        // Setup audio engine for Piper
+        setupAudioEngine()
+        
+        // Initialize Piper TTS if Amy voice is selected
+        if currentVoice == .amy {
+            initializePiper()
+        } else {
+            isUsingPiper = false
+        }
+        
         print("🎤 PiperTTS: Initialized with voice: \(currentVoice.displayName)")
+    }
+    
+    private func setupAudioEngine() {
+        audioEngine.attach(playerNode)
+        audioEngine.connect(playerNode, to: audioEngine.mainMixerNode, format: nil)
+        
+        do {
+            try audioEngine.start()
+        } catch {
+            print("🎤 PiperTTS: Failed to start audio engine: \(error)")
+        }
+    }
+    
+    private func initializePiper() {
+        // Only initialize if not already initialized
+        if piperCore == nil {
+            piperCore = PiperTTSCore(voice: .amy)
+            isUsingPiper = piperCore != nil
+            
+            if isUsingPiper {
+                print("🎤 PiperTTS: Using actual Piper TTS")
+            } else {
+                print("🎤 PiperTTS: Failed to initialize Piper, falling back to system TTS")
+            }
+        }
     }
     
     // MARK: - Public Methods
@@ -82,31 +106,207 @@ class PiperTTSEngine: NSObject, ObservableObject {
         
         completionHandler = completion
         
-        // Create utterance
+        // Try to use Piper TTS if available and selected
+        if currentVoice == .amy && piperCore != nil {
+            speakWithPiper(text: text, completion: completion)
+        } else {
+            // Fall back to system TTS
+            speakWithSystem(text: text, completion: completion)
+        }
+    }
+    
+    private func speakWithPiper(text: String, completion: (() -> Void)? = nil) {
+        guard let piperCore = piperCore else {
+            speakWithSystem(text: text, completion: completion)
+            return
+        }
+        
+        print("🎤 PiperTTS: Generating speech with actual Piper TTS...")
+        
+        // Generate speech in background
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            
+            // Generate audio
+            guard let (audioData, sampleRate) = piperCore.generateSpeech(text: text, speed: self.speechRate) else {
+                print("🎤 PiperTTS: Failed to generate speech, falling back to system")
+                DispatchQueue.main.async {
+                    self.speakWithSystem(text: text, completion: completion)
+                }
+                return
+            }
+            
+            // Create temporary WAV file
+            let tempURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent("piper_tts_\(UUID().uuidString).wav")
+            
+            // Write WAV file
+            if self.writeWAVFile(data: audioData, to: tempURL, sampleRate: Int(sampleRate)) {
+                DispatchQueue.main.async {
+                    self.playAudioFile(at: tempURL)
+                }
+            } else {
+                print("🎤 PiperTTS: Failed to write audio file")
+                DispatchQueue.main.async {
+                    completion?()
+                }
+            }
+        }
+    }
+    
+    private func speakWithSystem(text: String, completion: (() -> Void)? = nil) {
+        print("🎤 PiperTTS: Using system TTS as fallback")
+        
         let utterance = AVSpeechUtterance(string: text)
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate * speechRate
         utterance.pitchMultiplier = 1.0
         utterance.volume = 1.0
         
-        // Try to use a voice that matches the selected Piper voice
-        if let voiceName = currentVoice.systemVoiceName,
-           let voice = AVSpeechSynthesisVoice(identifier: "com.apple.voice.compact.\(voiceName)") {
-            utterance.voice = voice
-        } else if let voice = AVSpeechSynthesisVoice(language: "en-US") {
-            utterance.voice = voice
-        }
+        // Use default system voice
+        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
         
-        // Start playback
         synthesizer.speak(utterance)
         isPlaying = true
         isPaused = false
+    }
+    
+    private func playAudioFile(at url: URL) {
+        do {
+            audioFile = try AVAudioFile(forReading: url)
+            
+            guard let audioFile = audioFile else {
+                completionHandler?()
+                return
+            }
+            
+            // Get the audio engine's output format
+            let outputFormat = audioEngine.mainMixerNode.outputFormat(forBus: 0)
+            
+            // Create a buffer in the correct format for the audio engine
+            guard let buffer = AVAudioPCMBuffer(pcmFormat: outputFormat,
+                                                frameCapacity: AVAudioFrameCount(audioFile.length)) else {
+                print("🎤 PiperTTS: Failed to create buffer with output format")
+                completionHandler?()
+                return
+            }
+            
+            // If formats don't match, we need to convert
+            if audioFile.processingFormat != outputFormat {
+                print("🎤 PiperTTS: Converting audio format from \(audioFile.processingFormat) to \(outputFormat)")
+                
+                // Create a converter
+                guard let converter = AVAudioConverter(from: audioFile.processingFormat, to: outputFormat) else {
+                    print("🎤 PiperTTS: Failed to create audio converter")
+                    completionHandler?()
+                    return
+                }
+                
+                // Read the original file into a buffer
+                guard let inputBuffer = AVAudioPCMBuffer(pcmFormat: audioFile.processingFormat,
+                                                         frameCapacity: AVAudioFrameCount(audioFile.length)) else {
+                    completionHandler?()
+                    return
+                }
+                
+                try audioFile.read(into: inputBuffer)
+                
+                // Convert the audio
+                let inputBlock: AVAudioConverterInputBlock = { inNumPackets, outStatus in
+                    outStatus.pointee = .haveData
+                    return inputBuffer
+                }
+                
+                var error: NSError?
+                let status = converter.convert(to: buffer, error: &error, withInputFrom: inputBlock)
+                
+                if status == .error {
+                    print("🎤 PiperTTS: Conversion error: \(error?.localizedDescription ?? "unknown")")
+                    completionHandler?()
+                    return
+                }
+            } else {
+                // Formats match, just read directly
+                try audioFile.read(into: buffer)
+            }
+            
+            // Disconnect and reconnect with the proper format
+            audioEngine.disconnectNodeOutput(playerNode)
+            audioEngine.connect(playerNode, to: audioEngine.mainMixerNode, format: outputFormat)
+            
+            // Schedule buffer
+            playerNode.scheduleBuffer(buffer, at: nil, options: []) { [weak self] in
+                DispatchQueue.main.async {
+                    self?.isPlaying = false
+                    self?.completionHandler?()
+                    
+                    // Clean up temp file
+                    try? FileManager.default.removeItem(at: url)
+                }
+            }
+            
+            // Start playback
+            playerNode.play()
+            isPlaying = true
+            isPaused = false
+            
+            print("🎤 PiperTTS: Playing Piper-generated audio (format: \(outputFormat))")
+            
+        } catch {
+            print("🎤 PiperTTS: Failed to play audio: \(error)")
+            completionHandler?()
+        }
+    }
+    
+    private func writeWAVFile(data: Data, to url: URL, sampleRate: Int) -> Bool {
+        let pcmFormat = AVAudioFormat(commonFormat: .pcmFormatInt16,
+                                      sampleRate: Double(sampleRate),
+                                      channels: 1,
+                                      interleaved: false)
+        
+        guard let format = pcmFormat else { return false }
+        
+        do {
+            let audioFile = try AVAudioFile(forWriting: url,
+                                           settings: format.settings,
+                                           commonFormat: .pcmFormatInt16,
+                                           interleaved: false)
+            
+            // Create buffer from data
+            let frameCount = data.count / 2 // 16-bit samples
+            guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(frameCount)) else {
+                return false
+            }
+            
+            buffer.frameLength = AVAudioFrameCount(frameCount)
+            
+            // Copy data to buffer
+            data.withUnsafeBytes { bytes in
+                let int16Pointer = bytes.bindMemory(to: Int16.self)
+                if let channelData = buffer.int16ChannelData {
+                    for i in 0..<frameCount {
+                        channelData[0][i] = int16Pointer[i]
+                    }
+                }
+            }
+            
+            try audioFile.write(from: buffer)
+            return true
+            
+        } catch {
+            print("🎤 PiperTTS: Failed to write WAV file: \(error)")
+            return false
+        }
     }
     
     /// Pause playback
     func pause() {
         guard isPlaying else { return }
         
-        synthesizer.pauseSpeaking(at: .immediate)
+        if isUsingPiper && currentVoice == .amy {
+            playerNode.pause()
+        } else {
+            synthesizer.pauseSpeaking(at: .immediate)
+        }
         isPaused = true
         isPlaying = false
     }
@@ -115,16 +315,22 @@ class PiperTTSEngine: NSObject, ObservableObject {
     func resume() {
         guard isPaused else { return }
         
-        synthesizer.continueSpeaking()
+        if isUsingPiper && currentVoice == .amy {
+            playerNode.play()
+        } else {
+            synthesizer.continueSpeaking()
+        }
         isPaused = false
         isPlaying = true
     }
     
     /// Stop playback
     func stop() {
+        playerNode.stop()
         synthesizer.stopSpeaking(at: .immediate)
         isPlaying = false
         isPaused = false
+        isUsingPiper = false
         completionHandler = nil
     }
     
