@@ -519,9 +519,8 @@ struct HUDMainView: View {
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 ),
-                            lineWidth: audioManager.isSpeechDetected ? 3 : 0
+                            lineWidth: audioManager.isSpeechDetected ? 3.5 : 0
                         )
-                        .padding(1) // Small padding to ensure border is fully visible
                 )
                 .overlay(
                     // Content - pass isHovering and isRecordingLocked to RecordingView
