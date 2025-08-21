@@ -12,9 +12,12 @@ class PiperTTSEngine: NSObject, ObservableObject {
     @Published var isPlaying = false
     @Published var isPaused = false
     @Published var progress: Float = 0.0  // Track playback progress
-    @Published var currentVoice: PiperVoice = .amy {
+    @Published var currentVoice: PiperVoiceModel? {
         didSet {
-            UserDefaults.standard.set(currentVoice.rawValue, forKey: "PiperTTSVoice")
+            // Only reinitialize if the voice actually changed
+            if oldValue?.id != currentVoice?.id {
+                reinitializePiper()
+            }
         }
     }
     @Published var speechRate: Float = 1.0 {
@@ -23,18 +26,8 @@ class PiperTTSEngine: NSObject, ObservableObject {
         }
     }
     
-    // MARK: - Voice Options
-    enum PiperVoice: String, CaseIterable {
-        case amy = "en_US-amy"
-        case systemFallback = "system-default"
-        
-        var displayName: String {
-            switch self {
-            case .amy: return "Amy (Piper TTS)"
-            case .systemFallback: return "System Voice (Fallback)"
-            }
-        }
-    }
+    // MARK: - Voice Manager
+    private let voiceManager = PiperVoiceManager.shared
     
     // MARK: - Private Properties
     private var piperCore: PiperTTSCore?
@@ -56,10 +49,19 @@ class PiperTTSEngine: NSObject, ObservableObject {
     override init() {
         super.init()
         
-        // Load saved preferences
-        if let savedVoice = UserDefaults.standard.string(forKey: "PiperTTSVoice"),
-           let voice = PiperVoice(rawValue: savedVoice) {
-            self.currentVoice = voice
+        // Get the selected voice from voice manager (it handles loading saved preferences)
+        self.currentVoice = voiceManager.selectedVoice
+        
+        // If no voice selected but amy-low is available, use it (but don't trigger selection notification)
+        if currentVoice == nil {
+            if let amyLow = voiceManager.availableVoices.first(where: { $0.id == "amy-low" }) {
+                if voiceManager.isVoiceDownloaded(amyLow) {
+                    // Set directly without triggering notification during init
+                    self.currentVoice = amyLow
+                    voiceManager.selectedVoice = amyLow
+                    UserDefaults.standard.set(amyLow.id, forKey: "SelectedPiperVoice")
+                }
+            }
         }
         
         self.speechRate = UserDefaults.standard.float(forKey: "PiperTTSSpeechRate")
@@ -70,14 +72,22 @@ class PiperTTSEngine: NSObject, ObservableObject {
         // Setup audio engine for Piper
         setupAudioEngine()
         
-        // Initialize Piper TTS if Amy voice is selected
-        if currentVoice == .amy {
+        // Observe voice selection changes
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(voiceChanged(_:)),
+            name: NSNotification.Name("PiperVoiceSelectionChanged"),
+            object: nil
+        )
+        
+        // Initialize Piper TTS if a voice is selected
+        if currentVoice != nil {
             initializePiper()
         } else {
             isUsingPiper = false
         }
         
-        print("🎤 PiperTTS: Initialized with voice: \(currentVoice.displayName)")
+        print("🎤 PiperTTS: Initialized with voice: \(currentVoice?.displayName ?? "none")")
     }
     
     private func setupAudioEngine() {
@@ -93,16 +103,77 @@ class PiperTTSEngine: NSObject, ObservableObject {
     
     private func initializePiper() {
         // Only initialize if not already initialized
-        if piperCore == nil {
-            piperCore = PiperTTSCore(voice: .amy)
-            isUsingPiper = piperCore != nil
-            
-            if isUsingPiper {
-                print("🎤 PiperTTS: Using actual Piper TTS")
+        if piperCore == nil, let voice = currentVoice {
+            // Ensure voice is downloaded before initializing
+            if voiceManager.isVoiceDownloaded(voice) {
+                piperCore = PiperTTSCore(voiceModel: voice)
+                isUsingPiper = piperCore != nil
+                
+                if isUsingPiper {
+                    print("🎤 PiperTTS: Successfully initialized with \(voice.displayName)")
+                } else {
+                    print("⚠️ PiperTTS: Failed to initialize, falling back to system voice")
+                }
             } else {
-                print("🎤 PiperTTS: Failed to initialize Piper, falling back to system TTS")
+                print("⚠️ PiperTTS: Voice \(voice.displayName) not downloaded, cannot initialize")
+                isUsingPiper = false
             }
         }
+    }
+    
+    private var isReinitializing = false
+    
+    private func reinitializePiper() {
+        // Prevent concurrent re-initialization
+        guard !isReinitializing else {
+            print("🎤 PiperTTS: Re-initialization already in progress, skipping")
+            return
+        }
+        
+        print("🎤 PiperTTS: Starting re-initialization...")
+        isReinitializing = true
+        
+        // Stop any ongoing speech first
+        stop()
+        
+        // Clean up and reinitialize synchronously to avoid race conditions
+        // Clear the old instance
+        self.piperCore = nil
+        self.isUsingPiper = false
+        
+        // Initialize with new voice if available and downloaded
+        if let voice = self.currentVoice, self.voiceManager.isVoiceDownloaded(voice) {
+            self.piperCore = PiperTTSCore(voiceModel: voice)
+            self.isUsingPiper = self.piperCore != nil
+            
+            if self.isUsingPiper {
+                print("🎤 PiperTTS: Re-initialized with \(voice.displayName)")
+            } else {
+                print("⚠️ PiperTTS: Failed to re-initialize with \(voice.displayName)")
+            }
+        } else {
+            print("⚠️ PiperTTS: Voice not available or not downloaded")
+        }
+        
+        isReinitializing = false
+    }
+    
+    @objc private func voiceChanged(_ notification: Notification) {
+        if let voice = notification.userInfo?["voice"] as? PiperVoiceModel {
+            // Prevent re-selecting the same voice
+            guard voice.id != currentVoice?.id else { return }
+            self.currentVoice = voice
+            
+            // Save the selection
+            UserDefaults.standard.set(voice.id, forKey: "PiperTTSVoice")
+            
+            // Reinitialize with the new voice
+            reinitializePiper()
+        }
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     // MARK: - Public Methods
@@ -115,7 +186,7 @@ class PiperTTSEngine: NSObject, ObservableObject {
         completionHandler = completion
         
         // Try to use Piper TTS if available and selected
-        if currentVoice == .amy && piperCore != nil {
+        if currentVoice != nil && piperCore != nil {
             speakWithPiper(text: text, completion: completion)
         } else {
             // Fall back to system TTS
@@ -445,7 +516,7 @@ class PiperTTSEngine: NSObject, ObservableObject {
         isPaused = true
         isPlaying = false
         
-        if isUsingPiper && currentVoice == .amy {
+        if isUsingPiper && currentVoice != nil {
             playerNode.pause()
             stopProgressTimer()
             pausedProgress = progress  // Save current progress
@@ -462,7 +533,7 @@ class PiperTTSEngine: NSObject, ObservableObject {
         isPaused = false
         isPlaying = true
         
-        if isUsingPiper && currentVoice == .amy {
+        if isUsingPiper && currentVoice != nil {
             playerNode.play()
             // Resume from paused progress
             let remainingDuration = audioDuration * Double(1.0 - pausedProgress)
@@ -498,8 +569,8 @@ class PiperTTSEngine: NSObject, ObservableObject {
     }
     
     /// Get available voices
-    func getAvailableVoices() -> [PiperVoice] {
-        return PiperVoice.allCases
+    func getAvailableVoices() -> [PiperVoiceModel] {
+        return voiceManager.availableVoices
     }
     
     // MARK: - Progress Tracking

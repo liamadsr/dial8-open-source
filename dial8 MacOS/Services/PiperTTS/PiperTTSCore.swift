@@ -32,44 +32,40 @@ class PiperTTSCore {
     private var generateAudio: GenerateAudioFunc?
     private var destroyAudio: DestroyAudioFunc?
     
-    enum PiperVoice: String, CaseIterable {
-        case amy = "en_US-amy-low"
+    private var currentVoiceModel: PiperVoiceModel?
+    
+    var espeakDataPath: String {
+        // For Sherpa-ONNX models, use the downloaded espeak-ng-data
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let espeakPath = documentsPath.appendingPathComponent("dial8/PiperVoices/espeak-ng-data")
         
-        var displayName: String {
-            switch self {
-            case .amy: return "Amy (Piper TTS)"
-            }
+        if FileManager.default.fileExists(atPath: espeakPath.path) {
+            return espeakPath.path
         }
         
-        var modelPath: String {
-            // Try bundle first
-            if let path = Bundle.main.path(forResource: "en_US-amy-low", ofType: "onnx", inDirectory: "PiperModels/en_US-amy-low") {
-                return path
-            }
-            // Fallback to absolute path for development
-            return "/Users/liamalizadeh/code/open-source/dial8-open-source/Resources/PiperModels/en_US-amy-low/en_US-amy-low.onnx"
+        // Try bundle as fallback
+        if let path = Bundle.main.path(forResource: nil, ofType: nil, inDirectory: "PiperModels/espeak-ng-data") {
+            return path
         }
         
-        var tokensPath: String {
-            // Try bundle first
-            if let path = Bundle.main.path(forResource: "tokens", ofType: "txt", inDirectory: "PiperModels/en_US-amy-low") {
-                return path
-            }
-            // Fallback to absolute path for development
-            return "/Users/liamalizadeh/code/open-source/dial8-open-source/Resources/PiperModels/en_US-amy-low/tokens.txt"
-        }
-        
-        var espeakDataPath: String {
-            // Try bundle first
-            if let path = Bundle.main.path(forResource: nil, ofType: nil, inDirectory: "PiperModels/espeak-ng-data") {
-                return path
-            }
-            // Fallback to absolute path for development
-            return "/Users/liamalizadeh/code/open-source/dial8-open-source/Resources/PiperModels/espeak-ng-data"
-        }
+        // Ultimate fallback to development path
+        return "/Users/liamalizadeh/code/open-source/dial8-open-source/Resources/PiperModels/espeak-ng-data"
     }
     
-    init?(voice: PiperVoice = .amy) {
+    init?(voiceModel: PiperVoiceModel? = nil) {
+        // Use provided voice or get selected from manager
+        self.currentVoiceModel = voiceModel ?? PiperVoiceManager.shared.selectedVoice
+        
+        guard let voice = self.currentVoiceModel else {
+            print("🎤 PiperTTS: No voice model selected")
+            return nil
+        }
+        
+        // Check if voice is downloaded
+        guard PiperVoiceManager.shared.isVoiceDownloaded(voice) else {
+            print("🎤 PiperTTS: Voice not downloaded: \(voice.displayName)")
+            return nil
+        }
         // Load dynamic library
         var loadPath: String? = Bundle.main.path(forResource: "libsherpa-onnx-c", ofType: "dylib", inDirectory: "Frameworks")
         
@@ -141,10 +137,10 @@ class PiperTTSCore {
             return nil
         }
         
-        // Check if model files exist
-        let modelPath = voice.modelPath
-        let tokensPath = voice.tokensPath
-        let espeakPath = voice.espeakDataPath
+        // Get paths from voice manager
+        let modelPath = PiperVoiceManager.shared.getVoicePath(for: voice).path
+        let tokensPath = PiperVoiceManager.shared.getTokensPath(for: voice).path
+        let espeakPath = self.espeakDataPath
         
         print("🎤 PiperTTS: Model path: \(modelPath)")
         print("🎤 PiperTTS: Tokens path: \(tokensPath)")
@@ -208,12 +204,14 @@ class PiperTTSCore {
     }
     
     deinit {
+        print("🎤 PiperTTS: Cleaning up TTS instance for \(currentVoiceModel?.displayName ?? "unknown")")
         if let handle = ttsHandle {
             destroyTts?(handle)
         }
         if let handle = dylibHandle {
             dlclose(handle)
         }
+        print("🎤 PiperTTS: Cleanup complete")
     }
     
     /// Generate speech audio data

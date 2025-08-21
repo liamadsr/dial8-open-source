@@ -56,38 +56,39 @@ typedef struct SherpaOnnxOfflineTtsConfig {
     const char *rule_fsts;
     int32_t max_num_sentences;
     const char *rule_fars;
-    float silence_scale;
 } SherpaOnnxOfflineTtsConfig;
 
 // Helper function to create a config safely
 void* createPiperTtsConfig(const char* model_path, const char* tokens_path, const char* data_dir) {
+    // Use calloc to ensure all memory is zeroed
     SherpaOnnxOfflineTtsConfig* config = (SherpaOnnxOfflineTtsConfig*)calloc(1, sizeof(SherpaOnnxOfflineTtsConfig));
     
-    // Set VITS model config
+    if (!config) {
+        return NULL;
+    }
+    
+    // Initialize everything to zero first
+    memset(config, 0, sizeof(SherpaOnnxOfflineTtsConfig));
+    
+    // Set VITS model config with proper values
     config->model.vits.model = model_path;
     config->model.vits.tokens = tokens_path;
     config->model.vits.data_dir = data_dir;
-    config->model.vits.lexicon = NULL;
+    config->model.vits.lexicon = "";  // Empty string instead of NULL
     config->model.vits.noise_scale = 0.667f;
     config->model.vits.noise_scale_w = 0.8f;
     config->model.vits.length_scale = 1.0f;
-    config->model.vits.dict_dir = NULL;
-    
-    // Set other model configs to NULL/0
-    memset(&config->model.matcha, 0, sizeof(config->model.matcha));
-    memset(&config->model.kokoro, 0, sizeof(config->model.kokoro));
-    memset(&config->model.kitten, 0, sizeof(config->model.kitten));
+    config->model.vits.dict_dir = "";  // Empty string instead of NULL
     
     // Set general model config
     config->model.num_threads = 2;
     config->model.debug = 0;
     config->model.provider = "cpu";
     
-    // Set TTS config
-    config->rule_fsts = NULL;
-    config->rule_fars = NULL;
+    // Set TTS config with proper defaults
+    config->rule_fsts = "";  // Empty string instead of NULL
+    config->rule_fars = "";  // Empty string instead of NULL
     config->max_num_sentences = 2;
-    config->silence_scale = 0.3f;
     
     return config;
 }

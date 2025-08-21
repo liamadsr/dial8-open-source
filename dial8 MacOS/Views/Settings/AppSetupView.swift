@@ -16,6 +16,7 @@ struct AppSetupView: View {
     @AppStorage("enableTranscriptionCleaning") private var enableTranscriptionCleaning = true
     @ObservedObject private var soundEffects = HUDSoundEffects.shared
     @ObservedObject private var piperTTS = PiperTTSEngine.shared
+    @ObservedObject private var voiceManager = PiperVoiceManager.shared
     @ObservedObject private var ttsService = TextToSpeechService.shared
     @Environment(\.colorScheme) private var colorScheme
     
@@ -142,14 +143,30 @@ struct AppSetupView: View {
                         Label("Voice", systemImage: "person.wave.2")
                             .frame(width: 120, alignment: .leading)
                         
-                        Picker("", selection: $piperTTS.currentVoice) {
-                            ForEach(PiperTTSEngine.PiperVoice.allCases, id: \.self) { voice in
-                                Text(voice.displayName)
-                                    .tag(voice)
-                            }
+                        if let currentVoice = voiceManager.selectedVoice {
+                            Text(currentVoice.displayName)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("None Selected")
+                                .foregroundColor(.secondary)
                         }
-                        .pickerStyle(MenuPickerStyle())
-                        .frame(maxWidth: 200)
+                        
+                        Spacer()
+                        
+                        Button("Select Voice") {
+                            // Open voice selection window
+                            let window = NSWindow(
+                                contentRect: NSRect(x: 0, y: 0, width: 350, height: 400),
+                                styleMask: [.titled, .closable],
+                                backing: .buffered,
+                                defer: false
+                            )
+                            window.title = "Select Voice"
+                            window.contentView = NSHostingView(rootView: VoiceSelectionView())
+                            window.center()
+                            window.makeKeyAndOrderFront(nil)
+                        }
+                        .buttonStyle(.bordered)
                     }
                     
                     Divider()
@@ -174,7 +191,8 @@ struct AppSetupView: View {
                     // Test TTS Button
                     HStack {
                         Button(action: {
-                            let testText = "Hello! This is a test of the Piper text-to-speech system with the \(piperTTS.currentVoice.displayName) voice at \(ttsService.currentSpeed.displayName) speed."
+                            let voiceName = voiceManager.selectedVoice?.displayName ?? "default"
+                            let testText = "Hello! This is a test of the Piper text-to-speech system with the \(voiceName) voice at \(ttsService.currentSpeed.displayName) speed."
                             ttsService.speak(text: testText)
                         }) {
                             Label("Test Voice", systemImage: "play.circle")
