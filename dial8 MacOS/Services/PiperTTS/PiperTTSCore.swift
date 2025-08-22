@@ -236,9 +236,15 @@ class PiperTTSCore {
         
         print("🎤 PiperTTS: Generating audio for text: '\(text.prefix(50))...'")
         
+        // Measure generation time
+        let startTime = Date()
+        
         // Generate audio
         let audioHandle = text.withCString { cText in
+            print("🎤 PiperTTS: Calling generateAudio at \(Date())")
             let result = generateAudio(ttsHandle, cText, speakerId, speed)
+            let elapsed = Date().timeIntervalSince(startTime)
+            print("🎤 PiperTTS: Audio generation completed in \(elapsed) seconds")
             print("🎤 PiperTTS: Audio generation result: \(String(describing: result))")
             return result
         }

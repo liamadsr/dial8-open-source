@@ -56,6 +56,7 @@ typedef struct SherpaOnnxOfflineTtsConfig {
     const char *rule_fsts;
     int32_t max_num_sentences;
     const char *rule_fars;
+    float silence_scale;  // Required for v1.12.9
 } SherpaOnnxOfflineTtsConfig;
 
 // Helper function to create a config safely
@@ -81,7 +82,7 @@ void* createPiperTtsConfig(const char* model_path, const char* tokens_path, cons
     config->model.vits.dict_dir = "";  // Empty string instead of NULL
     
     // Set general model config
-    config->model.num_threads = 2;
+    config->model.num_threads = 8;  // Use more threads for faster generation
     config->model.debug = 0;
     config->model.provider = "cpu";
     
@@ -89,6 +90,7 @@ void* createPiperTtsConfig(const char* model_path, const char* tokens_path, cons
     config->rule_fsts = "";  // Empty string instead of NULL
     config->rule_fars = "";  // Empty string instead of NULL
     config->max_num_sentences = 2;
+    config->silence_scale = 0.3f;  // Default silence scale for v1.12.9
     
     return config;
 }

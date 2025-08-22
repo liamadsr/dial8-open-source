@@ -102,22 +102,29 @@ class PiperTTSEngine: NSObject, ObservableObject {
     }
     
     private func initializePiper() {
+        print("🎤 PiperTTS: initializePiper() called")
+        
         // Only initialize if not already initialized
         if piperCore == nil, let voice = currentVoice {
+            print("🎤 PiperTTS: Attempting to initialize with voice: \(voice.displayName)")
+            
             // Ensure voice is downloaded before initializing
             if voiceManager.isVoiceDownloaded(voice) {
+                print("🎤 PiperTTS: Voice is downloaded, creating PiperTTSCore...")
                 piperCore = PiperTTSCore(voiceModel: voice)
                 isUsingPiper = piperCore != nil
                 
                 if isUsingPiper {
                     print("🎤 PiperTTS: Successfully initialized with \(voice.displayName)")
                 } else {
-                    print("⚠️ PiperTTS: Failed to initialize, falling back to system voice")
+                    print("⚠️ PiperTTS: Failed to initialize PiperTTSCore, falling back to system voice")
                 }
             } else {
                 print("⚠️ PiperTTS: Voice \(voice.displayName) not downloaded, cannot initialize")
                 isUsingPiper = false
             }
+        } else {
+            print("🎤 PiperTTS: Skipping initialization - piperCore: \(piperCore != nil), currentVoice: \(currentVoice?.displayName ?? "nil")")
         }
     }
     
@@ -142,20 +149,28 @@ class PiperTTSEngine: NSObject, ObservableObject {
         self.isUsingPiper = false
         
         // Initialize with new voice if available and downloaded
-        if let voice = self.currentVoice, self.voiceManager.isVoiceDownloaded(voice) {
-            self.piperCore = PiperTTSCore(voiceModel: voice)
-            self.isUsingPiper = self.piperCore != nil
+        if let voice = self.currentVoice {
+            print("🎤 PiperTTS: Current voice: \(voice.displayName) (id: \(voice.id))")
             
-            if self.isUsingPiper {
-                print("🎤 PiperTTS: Re-initialized with \(voice.displayName)")
+            if self.voiceManager.isVoiceDownloaded(voice) {
+                print("🎤 PiperTTS: Voice is downloaded, creating PiperTTSCore...")
+                self.piperCore = PiperTTSCore(voiceModel: voice)
+                self.isUsingPiper = self.piperCore != nil
+                
+                if self.isUsingPiper {
+                    print("🎤 PiperTTS: Re-initialized successfully with \(voice.displayName)")
+                } else {
+                    print("⚠️ PiperTTS: Failed to create PiperTTSCore with \(voice.displayName)")
+                }
             } else {
-                print("⚠️ PiperTTS: Failed to re-initialize with \(voice.displayName)")
+                print("⚠️ PiperTTS: Voice not downloaded: \(voice.displayName)")
             }
         } else {
-            print("⚠️ PiperTTS: Voice not available or not downloaded")
+            print("⚠️ PiperTTS: No voice selected for re-initialization")
         }
         
         isReinitializing = false
+        print("🎤 PiperTTS: Re-initialization complete - isUsingPiper: \(isUsingPiper)")
     }
     
     @objc private func voiceChanged(_ notification: Notification) {
@@ -185,11 +200,14 @@ class PiperTTSEngine: NSObject, ObservableObject {
         
         completionHandler = completion
         
+        print("🎤 PiperTTS: speak() called - currentVoice: \(currentVoice?.displayName ?? "nil"), piperCore: \(piperCore != nil ? "exists" : "nil")")
+        
         // Try to use Piper TTS if available and selected
         if currentVoice != nil && piperCore != nil {
             speakWithPiper(text: text, completion: completion)
         } else {
             // Fall back to system TTS
+            print("🎤 PiperTTS: Falling back to system TTS - voice: \(currentVoice?.displayName ?? "nil"), core: \(piperCore != nil)")
             speakWithSystem(text: text, completion: completion)
         }
     }
