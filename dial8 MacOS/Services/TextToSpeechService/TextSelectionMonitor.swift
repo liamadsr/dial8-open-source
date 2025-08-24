@@ -263,6 +263,27 @@ class TextSelectionMonitor: ObservableObject {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
+            // Always re-register observers to ensure we catch TTSDidFinish
+            // Remove any existing observers first
+            NotificationCenter.default.removeObserver(self, name: Notification.Name("TTSHUDDismissed"), object: nil)
+            NotificationCenter.default.removeObserver(self, name: Notification.Name("TTSDidFinish"), object: nil)
+            
+            // Listen for dismiss notification
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(self.handleTTSHUDDismiss),
+                name: Notification.Name("TTSHUDDismissed"),
+                object: nil
+            )
+            
+            // Listen for TTS finish notification to auto-dismiss
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(self.handleTTSDidFinish),
+                name: Notification.Name("TTSDidFinish"),
+                object: nil
+            )
+            
             // If we have an existing controller and it's visible, just reset it
             if let existingController = self.hudController, isHUDVisible {
                 print("📋 TextSelectionMonitor: Resetting existing HUD for new text")
@@ -278,26 +299,6 @@ class TextSelectionMonitor: ObservableObject {
                 let hudController = TTSHUDController()
                 self.hudController = hudController
                 hudController.showAnimated()
-                
-                // Remove any existing observers first
-                NotificationCenter.default.removeObserver(self, name: Notification.Name("TTSHUDDismissed"), object: nil)
-                NotificationCenter.default.removeObserver(self, name: Notification.Name("TTSDidFinish"), object: nil)
-                
-                // Listen for dismiss notification
-                NotificationCenter.default.addObserver(
-                    self,
-                    selector: #selector(self.handleTTSHUDDismiss),
-                    name: Notification.Name("TTSHUDDismissed"),
-                    object: nil
-                )
-                
-                // Listen for TTS finish notification to auto-dismiss
-                NotificationCenter.default.addObserver(
-                    self,
-                    selector: #selector(self.handleTTSDidFinish),
-                    name: Notification.Name("TTSDidFinish"),
-                    object: nil
-                )
             }
             
             // Clear the switching flag after a delay (or immediately if not playing)
