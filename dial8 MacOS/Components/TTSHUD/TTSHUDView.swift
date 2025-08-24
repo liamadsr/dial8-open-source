@@ -70,17 +70,15 @@ struct TTSHUDView: View {
                                         ttsService.currentSpeed = speed
                                         showingSpeedPopover = false
                                     }) {
-                                        HStack {
-                                            Text(speed.displayName)
-                                                .font(.system(size: 10))
-                                            if ttsService.currentSpeed == speed {
-                                                Image(systemName: "checkmark")
-                                                    .font(.system(size: 8))
-                                            }
-                                        }
-                                        .foregroundColor(ttsService.currentSpeed == speed ? .white : .gray)
-                                        .frame(width: 60)
-                                        .padding(.vertical, 4)
+                                        Text(speed.displayName)
+                                            .font(.system(size: 10))
+                                            .foregroundColor(ttsService.currentSpeed == speed ? .black : .white)
+                                            .frame(width: 60)
+                                            .padding(.vertical, 4)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 3)
+                                                    .fill(ttsService.currentSpeed == speed ? Color.white : Color.clear)
+                                            )
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                 }

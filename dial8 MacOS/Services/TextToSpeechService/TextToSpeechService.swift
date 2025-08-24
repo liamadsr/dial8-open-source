@@ -15,6 +15,8 @@ enum TTSSpeed: Float, CaseIterable {
     case fast = 1.25
     case faster = 1.5
     case fastest = 2.0
+    case veryFast = 3.0
+    case extreme = 4.0
     
     var displayName: String {
         switch self {
@@ -23,6 +25,8 @@ enum TTSSpeed: Float, CaseIterable {
         case .fast: return "1.25x"
         case .faster: return "1.5x"
         case .fastest: return "2.0x"
+        case .veryFast: return "3.0x"
+        case .extreme: return "4.0x"
         }
     }
 }
