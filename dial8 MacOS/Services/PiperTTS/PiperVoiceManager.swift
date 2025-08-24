@@ -205,14 +205,26 @@ class PiperVoiceManager: NSObject, ObservableObject {
     }
     
     private func ensureEspeakData() {
-        // Check if espeak-ng-data exists in the voice directory
+        // Check if espeak-ng-data exists in bundle (it should always be there)
+        if let bundlePath = Bundle.main.resourcePath {
+            let bundledEspeakPath = URL(fileURLWithPath: bundlePath)
+                .appendingPathComponent("PiperModels")
+                .appendingPathComponent("espeak-ng-data")
+            
+            if FileManager.default.fileExists(atPath: bundledEspeakPath.path) {
+                print("✅ Using bundled espeak-ng-data")
+                return
+            }
+        }
+        
+        // Only download if not bundled (shouldn't happen in production)
         let espeakDir = voicesDirectory.appendingPathComponent("espeak-ng-data")
         
         if !FileManager.default.fileExists(atPath: espeakDir.path) {
-            print("📥 Downloading required espeak-ng-data...")
+            print("⚠️ espeak-ng-data not found in bundle, downloading...")
             downloadEspeakData()
         } else {
-            print("✅ espeak-ng-data already present")
+            print("✅ espeak-ng-data already present in documents")
         }
     }
     
@@ -451,8 +463,6 @@ class PiperVoiceManager: NSObject, ObservableObject {
         let possiblePaths = [
             // Bundle path
             bundledVoicesDirectory?.appendingPathComponent("en_US-amy-low").appendingPathComponent("tokens.txt"),
-            // Development path
-            URL(fileURLWithPath: "/Users/liamalizadeh/code/open-source/dial8-open-source/Resources/PiperModels/en_US-amy-low/tokens.txt"),
             // Downloaded amy-low (if exists)
             voicesDirectory.appendingPathComponent("en_US-amy-low").appendingPathComponent("tokens.txt")
         ].compactMap { $0 }

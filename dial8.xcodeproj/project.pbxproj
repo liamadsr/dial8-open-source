@@ -98,10 +98,12 @@
 		23A7EAF02E56BCA300C37745 /* Exceptions for "Resources" folder in "Copy Files" phase from "dial8 MacOS" target */ = {
 			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
 			attributesByRelativePath = {
+				Frameworks/libonnxruntime.1.17.1.dylib = (CodeSignOnCopy, );
 				"Frameworks/libsherpa-onnx-c.dylib" = (CodeSignOnCopy, );
 			};
 			buildPhase = 23A7EAEE2E56BC5700C37745 /* Copy Files */;
 			membershipExceptions = (
+				Frameworks/libonnxruntime.1.17.1.dylib,
 				"Frameworks/libsherpa-onnx-c.dylib",
 			);
 		};

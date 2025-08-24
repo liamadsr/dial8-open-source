@@ -35,7 +35,17 @@ class PiperTTSCore {
     private var currentVoiceModel: PiperVoiceModel?
     
     var espeakDataPath: String {
-        // For Sherpa-ONNX models, use the downloaded espeak-ng-data
+        // First try the bundled espeak-ng-data (should always be available)
+        if let bundlePath = Bundle.main.resourcePath {
+            let espeakBundlePath = URL(fileURLWithPath: bundlePath)
+                .appendingPathComponent("PiperModels")
+                .appendingPathComponent("espeak-ng-data")
+            if FileManager.default.fileExists(atPath: espeakBundlePath.path) {
+                return espeakBundlePath.path
+            }
+        }
+        
+        // Then try downloaded espeak-ng-data in user's documents
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let espeakPath = documentsPath.appendingPathComponent("dial8/PiperVoices/espeak-ng-data")
         
@@ -43,13 +53,15 @@ class PiperTTSCore {
             return espeakPath.path
         }
         
-        // Try bundle as fallback
-        if let path = Bundle.main.path(forResource: nil, ofType: nil, inDirectory: "PiperModels/espeak-ng-data") {
-            return path
+        // If neither exists, return bundled path (will fail gracefully)
+        if let bundlePath = Bundle.main.resourcePath {
+            return URL(fileURLWithPath: bundlePath)
+                .appendingPathComponent("PiperModels")
+                .appendingPathComponent("espeak-ng-data").path
         }
         
-        // Ultimate fallback to development path
-        return "/Users/liamalizadeh/code/open-source/dial8-open-source/Resources/PiperModels/espeak-ng-data"
+        // Absolute fallback
+        return ""
     }
     
     init?(voiceModel: PiperVoiceModel? = nil) {
@@ -66,23 +78,55 @@ class PiperTTSCore {
             print("🎤 PiperTTS: Voice not downloaded: \(voice.displayName)")
             return nil
         }
-        // Load dynamic library
-        var loadPath: String? = Bundle.main.path(forResource: "libsherpa-onnx-c", ofType: "dylib", inDirectory: "Frameworks")
+        // First, load the ONNX Runtime dependency
+        // This must be loaded before libsherpa-onnx-c.dylib
+        var onnxRuntimeHandle: UnsafeMutableRawPointer? = nil
         
-        if loadPath == nil {
-            print("🎤 PiperTTS: Failed to find libsherpa-onnx-c.dylib in bundle")
-            // Try alternative path
-            let altPath = "/Users/liamalizadeh/code/open-source/dial8-open-source/Resources/Frameworks/libsherpa-onnx-c.dylib"
-            if FileManager.default.fileExists(atPath: altPath) {
-                print("🎤 PiperTTS: Using alternative path: \(altPath)")
-                loadPath = altPath
+        if let frameworksPath = Bundle.main.privateFrameworksPath {
+            let onnxPath = URL(fileURLWithPath: frameworksPath)
+                .appendingPathComponent("libonnxruntime.1.17.1.dylib").path
+            
+            if FileManager.default.fileExists(atPath: onnxPath) {
+                print("🎤 PiperTTS: Loading ONNX Runtime from: \(onnxPath)")
+                onnxRuntimeHandle = dlopen(onnxPath, RTLD_NOW | RTLD_GLOBAL)
+                if onnxRuntimeHandle == nil {
+                    if let error = dlerror() {
+                        print("❌ PiperTTS: Failed to load ONNX Runtime: \(String(cString: error))")
+                        return nil
+                    }
+                } else {
+                    print("✅ PiperTTS: ONNX Runtime loaded successfully")
+                }
+            } else {
+                print("❌ PiperTTS: ONNX Runtime not found at: \(onnxPath)")
+                return nil
             }
-        }
-        
-        guard let path = loadPath else {
-            print("🎤 PiperTTS: Could not find libsherpa-onnx-c.dylib")
+        } else {
+            print("❌ PiperTTS: Could not determine Frameworks path")
             return nil
         }
+        
+        // Now load the main Sherpa-ONNX library
+        guard let frameworksPath = Bundle.main.privateFrameworksPath else {
+            print("❌ PiperTTS: Could not determine Frameworks path")
+            if onnxRuntimeHandle != nil {
+                dlclose(onnxRuntimeHandle)
+            }
+            return nil
+        }
+        
+        let path = URL(fileURLWithPath: frameworksPath)
+            .appendingPathComponent("libsherpa-onnx-c.dylib").path
+        
+        guard FileManager.default.fileExists(atPath: path) else {
+            print("❌ PiperTTS: libsherpa-onnx-c.dylib not found at: \(path)")
+            if onnxRuntimeHandle != nil {
+                dlclose(onnxRuntimeHandle)
+            }
+            return nil
+        }
+        
+        print("🎤 PiperTTS: Loading Sherpa library from: \(path)")
         
         dylibHandle = dlopen(path, RTLD_NOW)
         guard dylibHandle != nil else {
