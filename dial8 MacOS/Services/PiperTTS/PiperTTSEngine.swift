@@ -42,6 +42,13 @@ class PiperTTSEngine: NSObject, ObservableObject {
     private var playbackStartTime: Date?
     private var pausedProgress: Float = 0.0  // Store progress when paused
     
+    // Streaming properties
+    private var isStreaming = false
+    private var streamingBuffers: [AVAudioPCMBuffer] = []
+    private var streamingQueue = DispatchQueue(label: "com.dial8.pipertts.streaming")
+    private var totalSamplesGenerated: Int64 = 0
+    private var totalSamplesScheduled: Int64 = 0
+    
     // MARK: - Audio Monitor for TTS
     private let ttsAudioMonitor = TTSAudioMonitor.shared
     
@@ -218,12 +225,113 @@ class PiperTTSEngine: NSObject, ObservableObject {
             return
         }
         
-        print("🎤 PiperTTS: Generating speech with actual Piper TTS...")
+        // Use streaming for longer texts
+        if text.count > 50 {
+            print("🎤 PiperTTS: Using streaming TTS for text with \(text.count) characters")
+            speakWithPiperStreaming(text: text, piperCore: piperCore, completion: completion)
+        } else {
+            print("🎤 PiperTTS: Using non-streaming TTS for short text")
+            speakWithPiperNonStreaming(text: text, piperCore: piperCore, completion: completion)
+        }
+    }
+    
+    private func speakWithPiperStreaming(text: String, piperCore: PiperTTSCore, completion: (() -> Void)? = nil) {
+        // Set playing state immediately
+        isPlaying = true
+        isPaused = false
+        isUsingPiper = true
+        isStreaming = true
+        
+        // Reset streaming state
+        streamingBuffers.removeAll()
+        totalSamplesGenerated = 0
+        totalSamplesScheduled = 0
+        
+        // Start audio monitoring
+        ttsAudioMonitor.startMonitoring()
+        
+        // Split text into chunks based on newlines and sentences
+        let chunks = splitTextIntoNaturalChunks(text)
+        print("🎤 PiperTTS: Split text into \(chunks.count) natural chunks")
+        
+        var hasStartedPlayback = false
+        let startTime = Date()
+        var sampleRate: Int32 = 22050
+        
+        // Generate speech for each chunk in background
+        streamingQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            for (index, chunk) in chunks.enumerated() {
+                guard self.isPlaying else {
+                    print("🎤 PiperTTS: Streaming cancelled at chunk \(index)")
+                    break
+                }
+                
+                // Generate audio for this chunk
+                if let (audioData, chunkSampleRate) = piperCore.generateSpeech(text: chunk, speed: self.speechRate) {
+                    if index == 0 {
+                        sampleRate = chunkSampleRate
+                    }
+                    
+                    // Create audio buffer
+                    if let buffer = self.createStreamingBuffer(from: audioData, sampleRate: chunkSampleRate) {
+                        self.totalSamplesGenerated += Int64(audioData.count / 2)
+                        
+                        DispatchQueue.main.async {
+                            self.streamingBuffers.append(buffer)
+                            
+                            // Check if this will be the last buffer (we're on the last chunk)
+                            let willBeLastBuffer = (index == chunks.count - 1)
+                            
+                            if !hasStartedPlayback {
+                                hasStartedPlayback = true
+                                let timeToFirstChunk = Date().timeIntervalSince(startTime)
+                                print("🎤 PiperTTS: First chunk ready in \(String(format: "%.3f", timeToFirstChunk))s, starting playback")
+                                self.startStreamingPlayback(sampleRate: sampleRate)
+                            } else {
+                                self.scheduleStreamingBuffer(buffer, isLast: willBeLastBuffer)
+                            }
+                            
+                            // Don't update progress here - let the timer handle it based on actual playback
+                            // Progress should reflect playback position, not generation progress
+                        }
+                        
+                        print("🎤 PiperTTS: Generated chunk \(index + 1)/\(chunks.count): '\(chunk.prefix(30))...'")
+                    }
+                }
+            }
+            
+            // Mark completion
+            self.completionHandler = completion
+            
+            DispatchQueue.main.async {
+                // Calculate duration based on output format (48000 Hz) not input format
+                // The samples are generated at the input rate but played at output rate
+                let outputSampleRate = self.audioEngine.mainMixerNode.outputFormat(forBus: 0).sampleRate
+                let conversionRatio = outputSampleRate / Double(sampleRate)
+                
+                // Account for the fact that buffers are converted to output format
+                self.audioDuration = Double(self.totalSamplesScheduled) / outputSampleRate
+                
+                // If no samples scheduled yet, estimate from generated samples
+                if self.audioDuration == 0 {
+                    self.audioDuration = Double(self.totalSamplesGenerated) / Double(sampleRate)
+                }
+                
+                print("🎤 PiperTTS: All chunks generated. Total duration: \(String(format: "%.2f", self.audioDuration))s")
+            }
+        }
+    }
+    
+    private func speakWithPiperNonStreaming(text: String, piperCore: PiperTTSCore, completion: (() -> Void)? = nil) {
+        print("🎤 PiperTTS: Generating speech with non-streaming Piper TTS...")
         
         // Set playing state immediately to prevent HUD from dismissing
         isPlaying = true
         isPaused = false
-        isUsingPiper = true  // Mark that we're using Piper for this playback
+        isUsingPiper = true
+        isStreaming = false
         
         // Start audio monitoring for TTS waveform
         ttsAudioMonitor.startMonitoring()
@@ -237,7 +345,7 @@ class PiperTTSEngine: NSObject, ObservableObject {
                 print("🎤 PiperTTS: Failed to generate speech, falling back to system")
                 DispatchQueue.main.async {
                     self.isPlaying = false
-                    self.isUsingPiper = false  // Reset flag since we're falling back
+                    self.isUsingPiper = false
                     self.speakWithSystem(text: text, completion: completion)
                 }
                 return
@@ -263,7 +371,7 @@ class PiperTTSEngine: NSObject, ObservableObject {
                 DispatchQueue.main.async {
                     self.isPlaying = false
                     self.isPaused = false
-                    self.isUsingPiper = false  // Reset flag
+                    self.isUsingPiper = false
                     completion?()
                 }
             }
@@ -569,12 +677,18 @@ class PiperTTSEngine: NSObject, ObservableObject {
         isPlaying = false
         isPaused = false
         isUsingPiper = false
+        isStreaming = false
         completionHandler = nil
         progress = 0.0
         stopProgressTimer()
         ttsAudioMonitor.stopMonitoring()  // Stop TTS audio monitoring
         playbackStartTime = nil
         audioDuration = 0
+        
+        // Clear streaming state
+        streamingBuffers.removeAll()
+        totalSamplesGenerated = 0
+        totalSamplesScheduled = 0
     }
     
     /// Toggle play/pause
@@ -607,19 +721,254 @@ class PiperTTSEngine: NSObject, ObservableObject {
     }
     
     private func updateProgress() {
-        guard let startTime = playbackStartTime,
-              audioDuration > 0 else { return }
+        guard let startTime = playbackStartTime else { return }
         
-        let elapsed = Date().timeIntervalSince(startTime)
-        let currentProgress = Float(min(elapsed / audioDuration, 1.0))
-        
-        // Update progress
-        progress = currentProgress
-        
-        // Stop timer if playback finished
-        if currentProgress >= 1.0 {
-            stopProgressTimer()
+        if isStreaming {
+            // For streaming, calculate progress based on what's been played vs total expected duration
+            // We need to estimate total duration based on all chunks
+            if totalSamplesGenerated > 0 && streamingBuffers.count > 0 {
+                // Get current playback position
+                let elapsed = Date().timeIntervalSince(startTime)
+                
+                // Estimate total duration from samples generated so far
+                let currentGeneratedDuration = audioDuration
+                
+                if currentGeneratedDuration > 0 {
+                    // Progress is based on elapsed time vs total duration
+                    let currentProgress = Float(min(elapsed / currentGeneratedDuration, 1.0))
+                    progress = currentProgress
+                    
+                    // Stop timer if playback finished
+                    if currentProgress >= 1.0 {
+                        stopProgressTimer()
+                    }
+                }
+            }
+        } else {
+            // For non-streaming, use the original logic
+            guard audioDuration > 0 else { return }
+            
+            let elapsed = Date().timeIntervalSince(startTime)
+            let currentProgress = Float(min(elapsed / audioDuration, 1.0))
+            
+            // Update progress
+            progress = currentProgress
+            
+            // Stop timer if playback finished
+            if currentProgress >= 1.0 {
+                stopProgressTimer()
+            }
         }
+    }
+    
+    // MARK: - Streaming Helper Methods
+    
+    private func splitTextIntoNaturalChunks(_ text: String) -> [String] {
+        var chunks: [String] = []
+        
+        // First split by newlines to respect paragraph boundaries
+        let paragraphs = text.components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        
+        for paragraph in paragraphs {
+            // For short paragraphs, keep them as one chunk
+            if paragraph.count <= 150 {
+                chunks.append(paragraph)
+            } else {
+                // For longer paragraphs, split by sentences
+                let sentences = splitIntoSentences(paragraph)
+                
+                // Group sentences into reasonable chunks
+                var currentChunk = ""
+                for sentence in sentences {
+                    if currentChunk.isEmpty {
+                        currentChunk = sentence
+                    } else if (currentChunk.count + sentence.count) <= 150 {
+                        // Add to current chunk if it won't be too long
+                        currentChunk += " " + sentence
+                    } else {
+                        // Save current chunk and start new one
+                        chunks.append(currentChunk)
+                        currentChunk = sentence
+                    }
+                }
+                
+                // Add any remaining text
+                if !currentChunk.isEmpty {
+                    chunks.append(currentChunk)
+                }
+            }
+        }
+        
+        // If no chunks were created, just return the original text
+        if chunks.isEmpty {
+            chunks.append(text)
+        }
+        
+        return chunks
+    }
+    
+    private func splitIntoSentences(_ text: String) -> [String] {
+        var sentences: [String] = []
+        let sentenceEnders = CharacterSet(charactersIn: ".!?")
+        
+        // Use NSString for better sentence detection
+        let nsText = text as NSString
+        let options: NSString.EnumerationOptions = [.bySentences, .localized]
+        
+        nsText.enumerateSubstrings(in: NSRange(location: 0, length: nsText.length), options: options) { (substring, _, _, stop) in
+            if let sentence = substring?.trimmingCharacters(in: .whitespacesAndNewlines), !sentence.isEmpty {
+                sentences.append(sentence)
+            }
+        }
+        
+        // Fallback if NSString enumeration doesn't work well
+        if sentences.isEmpty {
+            sentences = text.components(separatedBy: sentenceEnders)
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) + "." }
+                .filter { $0.count > 1 }
+        }
+        
+        return sentences.isEmpty ? [text] : sentences
+    }
+    
+    private func createStreamingBuffer(from audioData: Data, sampleRate: Int32) -> AVAudioPCMBuffer? {
+        guard let format = AVAudioFormat(commonFormat: .pcmFormatInt16,
+                                        sampleRate: Double(sampleRate),
+                                        channels: 1,
+                                        interleaved: false) else {
+            print("🎤 PiperTTS: Failed to create audio format")
+            return nil
+        }
+        
+        let frameCount = audioData.count / 2  // 16-bit samples
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(frameCount)) else {
+            print("🎤 PiperTTS: Failed to create buffer")
+            return nil
+        }
+        
+        buffer.frameLength = AVAudioFrameCount(frameCount)
+        
+        // Copy PCM data to buffer
+        audioData.withUnsafeBytes { bytes in
+            let int16Pointer = bytes.bindMemory(to: Int16.self)
+            if let channelData = buffer.int16ChannelData {
+                for i in 0..<frameCount {
+                    channelData[0][i] = int16Pointer[i]
+                }
+            }
+        }
+        
+        return buffer
+    }
+    
+    private func startStreamingPlayback(sampleRate: Int32) {
+        // Ensure audio engine is running
+        if !audioEngine.isRunning {
+            do {
+                try audioEngine.start()
+            } catch {
+                print("🎤 PiperTTS: Failed to start audio engine: \(error)")
+                return
+            }
+        }
+        
+        // Setup output format
+        let outputFormat = audioEngine.mainMixerNode.outputFormat(forBus: 0)
+        
+        // Install tap for waveform monitoring
+        playerNode.removeTap(onBus: 0)
+        playerNode.installTap(onBus: 0, bufferSize: 1024, format: outputFormat) { [weak self] buffer, _ in
+            self?.ttsAudioMonitor.processAudioBuffer(buffer)
+        }
+        
+        // Schedule initial buffers
+        // Important: Don't mark any as "last" here since more buffers will be added later
+        for buffer in streamingBuffers {
+            scheduleStreamingBuffer(buffer, isLast: false)
+        }
+        
+        // Start playback
+        playerNode.play()
+        playbackStartTime = Date()
+        progress = 0.0
+        startProgressTimer()
+        
+        print("🎤 PiperTTS: Started streaming playback")
+    }
+    
+    private func scheduleStreamingBuffer(_ buffer: AVAudioPCMBuffer, isLast: Bool = false) {
+        let outputFormat = audioEngine.mainMixerNode.outputFormat(forBus: 0)
+        
+        // Convert format if needed
+        if buffer.format != outputFormat {
+            guard let converter = AVAudioConverter(from: buffer.format, to: outputFormat) else {
+                print("🎤 PiperTTS: Failed to create converter")
+                return
+            }
+            
+            let outputFrameCapacity = AVAudioFrameCount(Double(buffer.frameLength) * outputFormat.sampleRate / buffer.format.sampleRate + 1000)
+            guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: outputFormat, frameCapacity: outputFrameCapacity) else {
+                return
+            }
+            
+            let inputBlock: AVAudioConverterInputBlock = { _, outStatus in
+                outStatus.pointee = .haveData
+                return buffer
+            }
+            
+            var error: NSError?
+            let status = converter.convert(to: outputBuffer, error: &error, withInputFrom: inputBlock)
+            
+            if status == .error {
+                print("🎤 PiperTTS: Conversion error: \(error?.localizedDescription ?? "unknown")")
+                return
+            }
+            
+            // Schedule converted buffer
+            scheduleBuffer(outputBuffer, isLast: isLast)
+        } else {
+            // Direct scheduling
+            scheduleBuffer(buffer, isLast: isLast)
+        }
+    }
+    
+    private func scheduleBuffer(_ buffer: AVAudioPCMBuffer, isLast: Bool = false) {
+        // Track samples at the actual playback rate
+        totalSamplesScheduled += Int64(buffer.frameLength)
+        
+        // Update duration as we schedule buffers
+        let outputSampleRate = buffer.format.sampleRate
+        audioDuration = Double(totalSamplesScheduled) / outputSampleRate
+        
+        print("🎤 PiperTTS: Scheduling buffer, isLast: \(isLast)")
+        
+        playerNode.scheduleBuffer(buffer, at: nil, options: []) { [weak self] in
+            if isLast {
+                print("🎤 PiperTTS: Last buffer finished playing, triggering completion")
+                DispatchQueue.main.async {
+                    self?.handleStreamingComplete()
+                }
+            }
+        }
+    }
+    
+    private func handleStreamingComplete() {
+        print("🎤 PiperTTS: Streaming playback complete")
+        isPlaying = false
+        isPaused = false
+        isStreaming = false
+        progress = 1.0
+        stopProgressTimer()
+        ttsAudioMonitor.stopMonitoring()
+        completionHandler?()
+        completionHandler = nil
+        
+        // Clear streaming buffers
+        streamingBuffers.removeAll()
+        totalSamplesGenerated = 0
+        totalSamplesScheduled = 0
     }
 }
 

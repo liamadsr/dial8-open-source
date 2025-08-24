@@ -43,8 +43,8 @@ class TextSelectionService {
         print("📝 TextSelectionService: App has accessibility permission: \(trusted)")
     }
     
-    func getSelectedText() -> String? {
-        print("📝 TextSelectionService: Getting selected text")
+    func getSelectedText(expectSelection: Bool = true) -> String? {
+        print("📝 TextSelectionService: Getting selected text (expectSelection: \(expectSelection))")
         
         // Get current app's bundle ID
         let focusedAppBundleID = getFocusedApplicationBundleID() ?? "unknown"
@@ -66,13 +66,15 @@ class TextSelectionService {
            appName.contains("code") || 
            appName.contains("editor") {
             print("📝 TextSelectionService: Code editor detected, applying special handling")
-            // For code editors, we'll prioritize the clipboard approach
-            let clipboardResult = tryGetSelectedTextViaClipboard()
-            if let result = clipboardResult {
-                return result
+            // For code editors, only try clipboard if we expect selection
+            if expectSelection {
+                let clipboardResult = tryGetSelectedTextViaClipboard()
+                if let result = clipboardResult {
+                    return result
+                }
             }
             
-            // If clipboard failed, fall back to accessibility
+            // Always fall back to accessibility
             let (accessibilityResult, _) = tryGetSelectedTextViaAccessibility()
             return accessibilityResult
         }
@@ -94,23 +96,31 @@ class TextSelectionService {
                 return text
             }
             
-            // Otherwise, always try clipboard for code editors, regardless of the element info
-            print("📝 TextSelectionService: Code editor, using clipboard fallback")
-            let clipboardResult = tryGetSelectedTextViaClipboard()
-            
-            if clipboardResult != nil {
-                print("📝 TextSelectionService: Successfully got text from code editor via clipboard")
-            } else {
-                print("📝 TextSelectionService: No text found in code editor via either method")
+            // Otherwise, only try clipboard for code editors if we expect selection
+            if expectSelection {
+                print("📝 TextSelectionService: Code editor, using clipboard fallback")
+                let clipboardResult = tryGetSelectedTextViaClipboard()
+                
+                if clipboardResult != nil {
+                    print("📝 TextSelectionService: Successfully got text from code editor via clipboard")
+                } else {
+                    print("📝 TextSelectionService: No text found in code editor via either method")
+                }
+                
+                return clipboardResult
             }
             
-            return clipboardResult
+            return nil
         }
         
         // Check if this app is known to restrict accessibility
         if accessibilityRestrictedApps.contains(focusedAppBundleID) {
-            print("📝 TextSelectionService: App known to restrict accessibility, using clipboard directly")
-            return tryGetSelectedTextViaClipboard()
+            print("📝 TextSelectionService: App known to restrict accessibility")
+            if expectSelection {
+                print("📝 TextSelectionService: Trying clipboard")
+                return tryGetSelectedTextViaClipboard()
+            }
+            return nil
         }
         
         // Try accessibility API first - it's fast and non-intrusive
@@ -126,7 +136,10 @@ class TextSelectionService {
         if elementInfo.accessibilityRestricted {
             print("📝 TextSelectionService: Accessibility appears restricted, adding app to restricted list")
             accessibilityRestrictedApps.insert(focusedAppBundleID)
-            return tryGetSelectedTextViaClipboard()
+            if expectSelection {
+                return tryGetSelectedTextViaClipboard()
+            }
+            return nil
         }
         
         // Determine if clipboard attempt would be appropriate based on element properties
@@ -134,6 +147,12 @@ class TextSelectionService {
         
         if !shouldTryClipboard {
             print("📝 TextSelectionService: Element not suitable for copy, skipping clipboard: \(elementInfo.reason)")
+            return nil
+        }
+        
+        // Only try clipboard as fallback if we expect selection
+        if !expectSelection {
+            print("📝 TextSelectionService: Not expecting selection, skipping clipboard")
             return nil
         }
         

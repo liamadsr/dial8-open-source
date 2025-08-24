@@ -137,7 +137,9 @@ class TextSelectionMonitor: ObservableObject {
                 }
                 scheduleSelectionCheck()
             } else {
-                print("📋 TextSelectionMonitor: Single click detected, not checking for selection")
+                // Single click - check if it deselected text (don't expect selection)
+                print("📋 TextSelectionMonitor: Single click detected, checking if text was deselected")
+                scheduleSelectionCheck(expectSelection: false)
             }
             
             // Reset tracking variables
@@ -149,7 +151,7 @@ class TextSelectionMonitor: ObservableObject {
         }
     }
     
-    private func scheduleSelectionCheck() {
+    private func scheduleSelectionCheck(expectSelection: Bool = true) {
         // Cancel any existing timer
         selectionCheckTimer?.invalidate()
         
@@ -157,16 +159,16 @@ class TextSelectionMonitor: ObservableObject {
         guard !isCheckingSelection else { return }
         
         // Check immediately for snappy response
-        checkForSelectedText()
+        checkForSelectedText(expectSelection: expectSelection)
     }
     
-    private func checkForSelectedText() {
+    private func checkForSelectedText(expectSelection: Bool = true) {
         guard !isCheckingSelection else { return }
         isCheckingSelection = true
         
         // Use TextSelectionService to get selected text
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let currentSelectedText = TextSelectionService.shared.getSelectedText()
+            let currentSelectedText = TextSelectionService.shared.getSelectedText(expectSelection: expectSelection)
             
             DispatchQueue.main.async {
                 self?.isCheckingSelection = false
@@ -193,17 +195,32 @@ class TextSelectionMonitor: ObservableObject {
             
             // Check if we're in the process of switching text
             if isSwitchingText {
-                print("📋 TextSelectionMonitor: Ignoring deselection - currently switching text")
-                return
+                print("📋 TextSelectionMonitor: Text deselected while switching - clearing switch flag")
+                isSwitchingText = false
+                // Don't return - continue to hide HUD logic
             }
             
-            // Only hide HUD if TTS is not currently playing
-            if TextToSpeechService.shared.state == .idle {
+            // Check current TTS state
+            let ttsState = TextToSpeechService.shared.state
+            let isPlaying = TextToSpeechService.shared.isSpeaking
+            print("📋 TextSelectionMonitor: Text deselected. TTS state: \(ttsState), isSpeaking: \(isPlaying)")
+            
+            // Hide HUD if TTS is not actively playing
+            // Keep it visible only if TTS is actually playing audio
+            if ttsState != .playing {
+                print("📋 TextSelectionMonitor: TTS is not playing (state: \(ttsState)), will hide HUD")
                 // Add a small delay to avoid race conditions
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                     // Double-check state hasn't changed
-                    if TextToSpeechService.shared.state == .idle && self?.hasSelectedText == false {
+                    let currentState = TextToSpeechService.shared.state
+                    print("📋 TextSelectionMonitor: Delayed check - state: \(currentState), hasSelectedText: \(self?.hasSelectedText ?? false)")
+                    
+                    // Hide if still not playing and no text selected
+                    if currentState != .playing && self?.hasSelectedText == false {
+                        print("📋 TextSelectionMonitor: Hiding HUD now")
                         self?.hideHUD()
+                    } else {
+                        print("📋 TextSelectionMonitor: Not hiding HUD - TTS started playing or text reselected")
                     }
                 }
             } else {
@@ -283,23 +300,24 @@ class TextSelectionMonitor: ObservableObject {
                 )
             }
             
-            // Clear the switching flag after a delay
+            // Clear the switching flag after a delay (or immediately if not playing)
             if wasPlaying {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     self.isSwitchingText = false
                 }
+            } else {
+                // Clear immediately if wasn't playing
+                self.isSwitchingText = false
             }
         }
     }
     
     private func hideHUD(force: Bool = false) {
-        // Don't hide if we're switching text (unless forced)
-        if !force && isSwitchingText {
-            print("📋 TextSelectionMonitor: Skipping hide - currently switching text")
-            return
-        }
+        print("📋 TextSelectionMonitor: Hiding TTS HUD (force: \(force), isSwitchingText: \(isSwitchingText))")
         
-        print("📋 TextSelectionMonitor: Hiding TTS HUD (force: \(force))")
+        // Clear the switching flag when hiding
+        isSwitchingText = false
+        
         DispatchQueue.main.async { [weak self] in
             self?.hudController?.hideAnimated(isUserDismiss: force)
             self?.hudController = nil
