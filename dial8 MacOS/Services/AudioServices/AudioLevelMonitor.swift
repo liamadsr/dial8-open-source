@@ -11,8 +11,12 @@ class AudioLevelMonitor: ObservableObject {
     @Published var smoothedLevel: Float = 0.0
     @Published var isActive: Bool = false
     
-    // Configuration
-    private let noiseFloor: Float = 0.005 // Balanced threshold
+    // Configuration - noise floor threshold adapts based on Whisper Mode
+    private var noiseFloor: Float {
+        let whisperModeEnabled = UserDefaults.standard.bool(forKey: "enableWhisperMode")
+        // Much lower threshold when Whisper Mode is on for quiet speech detection
+        return whisperModeEnabled ? 0.001 : 0.005
+    }
     private let smoothingFactor: Float = 0.0 // No smoothing - not used anymore
     private let amplificationFactor: Float = 5.0 // Moderate amplification for controlled height
     private let updateInterval: TimeInterval = 0.008 // ~125Hz for ultra-smooth motion

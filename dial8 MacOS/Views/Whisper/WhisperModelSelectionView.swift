@@ -6,6 +6,8 @@ struct WhisperModelSelectionView: View {
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("enableTranscriptionCleaning") private var enableTranscriptionCleaning = true
     @AppStorage("enableAutoPunctuation") private var enableAutoPunctuation = true
+    @AppStorage("enableWhisperMode") private var enableWhisperMode = false
+    @AppStorage("enableVoiceIsolation") private var enableVoiceIsolation = false
     @AppStorage("pauseDetectionThreshold") private var pauseDetectionThreshold: Double = 1.5
     var showTitle: Bool = true
     var showDescription: Bool = true
@@ -471,6 +473,63 @@ struct WhisperModelSelectionView: View {
                             Text("Automatically adds a period at the end of your transcriptions")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
+                        }
+                        
+                        Divider()
+                        
+                        // Whisper Mode Toggle
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "speaker.wave.1")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.purple)
+                                Text("Whisper Mode")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                
+                                Toggle("", isOn: $enableWhisperMode)
+                                    .toggleStyle(SwitchToggleStyle())
+                                    .scaleEffect(0.8)
+                            }
+                            
+                            Text("🤫 Optimized for quiet speech – boosts audio gain for accurate transcription when speaking softly")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Divider()
+                        
+                        // Voice Isolation Toggle
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "person.wave.2")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.green)
+                                Text("Voice Isolation")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                
+                                Toggle("", isOn: $enableVoiceIsolation)
+                                    .toggleStyle(SwitchToggleStyle())
+                                    .scaleEffect(0.8)
+                                    .onChange(of: enableVoiceIsolation) { _ in
+                                        // Notify that voice isolation setting changed - requires engine restart
+                                        NotificationCenter.default.post(
+                                            name: NSNotification.Name("VoiceIsolationSettingChanged"),
+                                            object: nil
+                                        )
+                                    }
+                            }
+                            
+                            Text("🔇 Uses Apple's AI-powered noise cancellation to filter out background noise")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            Text("Note: Changing this setting may briefly restart the audio engine")
+                                .font(.caption2)
+                                .foregroundColor(.orange.opacity(0.8))
                         }
                         
                     }

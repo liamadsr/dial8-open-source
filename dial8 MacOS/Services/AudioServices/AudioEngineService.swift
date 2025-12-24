@@ -25,6 +25,9 @@ class AudioEngineService: ObservableObject {
     
     private var audioConverter: AVAudioConverter?
     
+    // Whisper Mode: Gain factor for boosting quiet speech
+    private var whisperModeGain: Float = 3.0
+    
     init() {
         setupNotifications()
         // Don't automatically setup the audio engine
@@ -121,6 +124,9 @@ class AudioEngineService: ObservableObject {
             return
         }
         
+        // Setup Voice Isolation (noise cancellation) if enabled
+        setupVoiceIsolation()
+        
         // Get the native input format
         let inputNode = audioEngine.inputNode
         let nativeFormat = inputNode.inputFormat(forBus: 0)
@@ -183,6 +189,12 @@ class AudioEngineService: ObservableObject {
                                  withInputFrom: inputBlock)
             
             if error == nil {
+                // Apply Whisper Mode gain boost if enabled
+                let whisperModeEnabled = UserDefaults.standard.bool(forKey: "enableWhisperMode")
+                if whisperModeEnabled {
+                    self.applyWhisperModeGain(to: convertedBuffer)
+                }
+                
                 self.onAudioBuffer?(convertedBuffer)
             } else {
                 print("AudioEngineService: Buffer conversion error: \(error?.localizedDescription ?? "unknown")")
@@ -341,6 +353,52 @@ class AudioEngineService: ObservableObject {
         }
         
         attempt(index: 0)
+    }
+    
+    // MARK: - Whisper Mode (Quiet Speech Boost)
+    
+    /// Applies gain boost to the audio buffer for better recognition of quiet speech
+    /// - Parameter buffer: The audio buffer to process
+    private func applyWhisperModeGain(to buffer: AVAudioPCMBuffer) {
+        guard let channelData = buffer.floatChannelData else { return }
+        let frameLength = Int(buffer.frameLength)
+        
+        // Apply gain to amplify quiet speech
+        for i in 0..<frameLength {
+            var sample = channelData.pointee[i] * whisperModeGain
+            // Soft clipping to prevent harsh distortion
+            if sample > 0.95 {
+                sample = 0.95 + 0.05 * tanh((sample - 0.95) / 0.05)
+            } else if sample < -0.95 {
+                sample = -0.95 + 0.05 * tanh((sample + 0.95) / 0.05)
+            }
+            channelData.pointee[i] = sample
+        }
+    }
+    
+    // MARK: - Voice Isolation (Noise Cancellation)
+    
+    /// Enables Apple's Voice Isolation for noise cancellation
+    /// This uses Apple's ML-powered voice processing to filter background noise
+    func setupVoiceIsolation() {
+        guard let audioEngine = audioEngine else {
+            print("AudioEngineService: No audio engine available for Voice Isolation")
+            return
+        }
+        
+        let inputNode = audioEngine.inputNode
+        let voiceIsolationEnabled = UserDefaults.standard.bool(forKey: "enableVoiceIsolation")
+        
+        do {
+            try inputNode.setVoiceProcessingEnabled(voiceIsolationEnabled)
+            if voiceIsolationEnabled {
+                print("🔇 AudioEngineService: Voice Isolation enabled (noise cancellation active)")
+            } else {
+                print("🔊 AudioEngineService: Voice Isolation disabled")
+            }
+        } catch {
+            print("❌ AudioEngineService: Failed to set voice processing: \(error.localizedDescription)")
+        }
     }
     
     deinit {
