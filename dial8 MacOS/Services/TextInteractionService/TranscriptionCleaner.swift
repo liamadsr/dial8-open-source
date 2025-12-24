@@ -7,7 +7,8 @@ class TranscriptionCleaner {
     static let shared = TranscriptionCleaner()
     
     #if canImport(FoundationModels)
-    private let session = LanguageModelSession()
+    @available(macOS 26.0, *)
+    private lazy var session: LanguageModelSession = LanguageModelSession()
     #endif
     private let queue = DispatchQueue(label: "com.dial8.transcriptionCleaner")
     
@@ -16,6 +17,11 @@ class TranscriptionCleaner {
     /// Clean up transcribed text by removing filler words and making it concise
     func cleanTranscription(_ rawText: String) async throws -> String {
         #if canImport(FoundationModels)
+        // Check for macOS 26.0+ availability at runtime
+        guard #available(macOS 26.0, *) else {
+            return rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        
         // Skip cleaning if text is empty or very short
         let trimmedText = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmedText.isEmpty || trimmedText.count < 3 {
