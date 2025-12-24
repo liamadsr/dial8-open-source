@@ -5,6 +5,7 @@ struct WhisperModelSelectionView: View {
     @EnvironmentObject var audioManager: AudioManager
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("enableTranscriptionCleaning") private var enableTranscriptionCleaning = true
+    @AppStorage("enableAutoPunctuation") private var enableAutoPunctuation = true
     @AppStorage("pauseDetectionThreshold") private var pauseDetectionThreshold: Double = 1.5
     var showTitle: Bool = true
     var showDescription: Bool = true
@@ -447,6 +448,29 @@ struct WhisperModelSelectionView: View {
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
+                        }
+                        
+                        Divider()
+                        
+                        // Auto-Punctuation Toggle
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "text.justify.left")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.blue)
+                                Text("Auto-Punctuation")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                
+                                Toggle("", isOn: $enableAutoPunctuation)
+                                    .toggleStyle(SwitchToggleStyle())
+                                    .scaleEffect(0.8)
+                            }
+                            
+                            Text("Automatically adds a period at the end of your transcriptions")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
                         }
                         
                     }

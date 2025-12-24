@@ -7,6 +7,7 @@ class TranscriptionResultHandler {
     // Block mode text accumulation
     private var accumulatedText: String = ""
     private var isBlockMode: Bool = false
+    private let textFormatter = TextFormatter()
     
     private init() {}
     
@@ -76,8 +77,16 @@ class TranscriptionResultHandler {
         } else {
             // If cleaning is disabled or unavailable, use original text
             await MainActor.run {
-                // Apply text replacements when cleaning is disabled
-                let processedText = TextReplacementService.shared.applyReplacements(to: text)
+                var processedText = text
+                
+                // Apply auto-punctuation if enabled and this is final text
+                let autoPunctuationEnabled = UserDefaults.standard.bool(forKey: "enableAutoPunctuation")
+                if autoPunctuationEnabled && !isTemporary {
+                    processedText = self.textFormatter.autoPunctuate(processedText)
+                }
+                
+                // Apply text replacements
+                processedText = TextReplacementService.shared.applyReplacements(to: processedText)
                 self.handleTranscriptionInsertion(processedText, isTemporary: isTemporary)
             }
         }
@@ -115,8 +124,16 @@ class TranscriptionResultHandler {
         } else {
             // If cleaning is disabled or unavailable, use original text
             await MainActor.run {
+                var processedText = textToClean
+                
+                // Apply auto-punctuation if enabled
+                let autoPunctuationEnabled = UserDefaults.standard.bool(forKey: "enableAutoPunctuation")
+                if autoPunctuationEnabled {
+                    processedText = self.textFormatter.autoPunctuate(processedText)
+                }
+                
                 // Apply text replacements when cleaning is disabled
-                let processedText = TextReplacementService.shared.applyReplacements(to: textToClean)
+                processedText = TextReplacementService.shared.applyReplacements(to: processedText)
                 self.insertAccumulatedText(processedText)
             }
         }

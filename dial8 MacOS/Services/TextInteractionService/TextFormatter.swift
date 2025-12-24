@@ -131,6 +131,26 @@ class TextFormatter {
         return cleanedText
     }
     
+    /// Adds sentence-ending punctuation if it's missing
+    /// - Parameter text: The text to punctuate
+    /// - Returns: The punctuated text
+    func autoPunctuate(_ text: String) -> String {
+        guard !text.isEmpty else { return text }
+        
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedText.isEmpty { return text }
+        
+        // List of sentence-ending punctuation marks
+        let sentenceEnders: Set<Character> = [".", "!", "?", ":", ";"]
+        
+        // If the last character is not a sentence ender, add a period
+        if let lastChar = trimmedText.last, !sentenceEnders.contains(lastChar) {
+            return trimmedText + "."
+        }
+        
+        return trimmedText
+    }
+    
     /// Formats the text before insertion, handling capitalization and word repetition
     /// - Parameters:
     ///   - text: The text to format

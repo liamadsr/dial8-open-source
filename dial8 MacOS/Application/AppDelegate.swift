@@ -16,7 +16,9 @@ extension Notification.Name {
 // Add extension for UserDefaults
 extension UserDefaults {
     static func registerDefaults() {
-        UserDefaults.standard.register(defaults: [:])
+        UserDefaults.standard.register(defaults: [
+            "enableAutoPunctuation": true
+        ])
     }
 }
 
